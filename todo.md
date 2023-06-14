@@ -1,0 +1,9 @@
+- [x] Create a Github repository 
+- [x] Correct all conv layers to have as input the number of channels and the correct output
+- [x] Remove Adim  
+- [ ] Create PSF function 
+  - [ ] Put MN as input channel and mn as output channel in order to do MN x p become (mn x p)
+- [ ] Answer the question about the number of endmembers. 
+- [ ] Obtain Multispectral Image (Y)
+- [ ] Do a forward pass to see the details about the dimensions of the layers
+
