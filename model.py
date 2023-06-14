@@ -36,20 +36,20 @@ class Model(torch.nn.Module):
         self.p = n_endmembers
 
         # lr encoder part
-        self.conv1_lr = nn.Conv2d(self.HSI_n_pixels, h_dim1, kernel_size=(1,1))  
+        self.conv1_lr = nn.Conv2d(self.n_spectral, h_dim1, kernel_size=(1,1))  
         self.conv2_lr = nn.Conv2d(h_dim1, h_dim2, kernel_size=(1,1))  
         self.conv3_lr = nn.Conv2d(h_dim2, h_dim3, kernel_size=(1,1))    
-        self.conv4_lr = nn.Conv2d(h_dim3, self.A_dim, kernel_size=(1,1))
+        self.conv4_lr = nn.Conv2d(h_dim3, self.p, kernel_size=(1,1))
 
         # hr encoder part
-        self.conv1_hr = nn.Conv2d(self.MSI_n_pixels, h_dim1, kernel_size=(1,1))
+        self.conv1_hr = nn.Conv2d(self.MSI_n_channels, h_dim1, kernel_size=(1,1))
         self.conv2_hr = nn.Conv2d(h_dim1, h_dim2, kernel_size=(1,1)) 
         self.conv3_hr = nn.Conv2d(h_dim2, h_dim3, kernel_size=(1,1)) 
-        self.conv4_hr = nn.Conv2d(h_dim3, self.A_dim, kernel_size=(1,1))
+        self.conv4_hr = nn.Conv2d(h_dim3, self.p, kernel_size=(1,1))
 
         # SRF function
-        self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_pixels, kernel_size=(1,1), bias=False) # BIAS FALSE?
-        self.SRFnorm = nn.BatchNorm2d(self.MSI_n_pixels, affine=False)
+        self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_channels, kernel_size=(1,1), bias=False) # BIAS FALSE?
+        self.SRFnorm = nn.BatchNorm2d(self.MSI_n_channels, affine=False)
 
         # PSF function
         self.PSFconv = nn.Conv2d(1, 1, kernel_size=(3,3), padding=1, bias=False) # BIAS FALSE?
