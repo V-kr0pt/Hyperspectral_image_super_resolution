@@ -85,15 +85,28 @@ class Model(torch.nn.Module):
         return h.view((-1, self.n_spectral))           
     
     def SRF(self, x):
+        # here x will be Z (mn x L) or E (p x L)
+        # we'll reshape it to the spectral dimension be the first one
         x = x.view((self.n_spectral, -1))
+        # The conv layer simulates the numerator of SRF function
         phi_num = self.SRFconv(x)
-        phi = self.SRFnorm(phi_num)        
-        return phi.view((self.MSI_n_pixels, self.MSI_n_channels))
+        # After normalize, we obtain the spectral degenerated object
+        spectral_degenerated = self.SRFnorm(phi_num)     
+        # we reshape it to the original shape it to (mn x l) if Ylr or (p x l) if Em 
+        return spectral_degenerated.view((-1, self.MSI_n_channels))
     
     def PSF(self, x):
+        # here x will be A (MN x p) or Y (MN x l) 
         x = x.view((self.MSI_n_pixels, -1))
-        h = self.PSFconv(x)
-        return h.view((self.HSI_n_pixels, -1))
+        # the spatial generated will be Ah (mn x p) or Ylr (mn x l)
+        spatial_degenerated = np.zeros((self.HSI_n_pixels, x.shape[-1]))
+        # for each band, p or l
+        for band in range(x.shape[-1]):
+            # the spatial_degenerated object will be the PSF applied to A or Y 
+            # the spatial resolution after do that will be mn due to the 
+            # kernel size and stride
+            spatial_degenerated[:, band] = self.PSFconv(x[:,band])
+        return spatial_degenerated
     
     def forward(self, Z, Y):
         # applying encoder
