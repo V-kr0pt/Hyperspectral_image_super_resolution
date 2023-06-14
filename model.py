@@ -62,7 +62,9 @@ class Model(torch.nn.Module):
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
 
     def LrHSI_encoder(self, Z):
+        # we reshape Z to be (L x mn) where L is the number of spectral bands
         h = Z.view((self.n_spectral, self.HSI_n_pixels)) 
+        # we apply the convolutional layers
         h = nn.LeakyReLU()(self.conv1_lr(h))
         h = nn.LeakyReLU()(self.conv2_lr(h))
         h = nn.LeakyReLU()(self.conv3_lr(h))
@@ -72,7 +74,9 @@ class Model(torch.nn.Module):
         return Ah
     
     def HrMSI_encoder(self, Y):
+        # we reshape Y to be (l x mn) where l is the number of color channels
         h = Y.view((self.MSI_n_channels, self.MSI_n_pixels)) 
+        # we apply the convolutional layers
         h = nn.LeakyReLU()(self.conv1_hr(h))
         h = nn.LeakyReLU()(self.conv2_hr(h))
         h = nn.LeakyReLU()(self.conv3_hr(h))
@@ -82,7 +86,9 @@ class Model(torch.nn.Module):
         return A
     
     def endmembers(self, A):
+        # we reshape A to be (p x MN) or (p x mn) where p is the number of endmembers
         h = A.view((self.p, -1))
+        # apply the conv layer (matrix multiplication) to obtain Z' (mn x )or X'
         h = self.Econv(A)
         return h.view((-1, self.n_spectral))           
     
@@ -93,7 +99,9 @@ class Model(torch.nn.Module):
         # The conv layer simulates the numerator of SRF function
         phi_num = self.SRFconv(x)
         # After normalize, we obtain the spectral degenerated object
-        spectral_degenerated = self.SRFnorm(phi_num)     
+        spectral_degenerated = self.SRFnorm(phi_num) 
+        # apply clamp to ensure that   
+        spectral_degenerated = torch.clamp(spectral_degenerated, min=0, max=1)  
         # we reshape it to the original shape it to (mn x l) if Ylr or (p x l) if Em 
         return spectral_degenerated.view((-1, self.MSI_n_channels))
     
