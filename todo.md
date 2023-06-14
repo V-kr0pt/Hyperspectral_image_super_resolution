@@ -6,5 +6,9 @@
 - [ ] Answer the question about the number of endmembers. 
 - [ ] Obtain Multispectral Image (Y)
 - [ ] Do a forward pass to see the details about the dimensions of the layers
+<<<<<<< HEAD
 - [ ] Create a .txt with details about the Indian Pine dataset 
+=======
+- [ ] Create loss function
+>>>>>>> 8722a6e (addind loss function ToDo)
 
