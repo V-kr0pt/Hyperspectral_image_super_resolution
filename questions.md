@@ -31,7 +31,8 @@ Maybe this sentence from the article can help us.
 ---
 
 - [x] The number of endmemembers it's something known by the user or we have to find it? If the second option, how?
-    "..."
+
+      the number of endmembers will be an hyperparameter. In pag 9, the article says that "Therefore, a larger number of endmembers allows the model to be more representative. Although the number of endmembers is assumed to be equal to the number of pure spectral bases in the linear unmixing, the number of endmembers can also be larger than the actual number of pure bases because the convolution weight matrix E can contain mixed material"
 
 - [ ] How to guarantee that A will have MN x p dimension, since the conv layer without any padding will reduce the dimension of the input?
     
