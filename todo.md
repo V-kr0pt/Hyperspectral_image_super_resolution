@@ -3,7 +3,10 @@
 - [x] Remove Adim  
 - [ ] Create PSF function 
   - [ ] Put MN as input channel and mn as output channel in order to do MN x p become (mn x p)
+- [ ] Put clamp in PSF and SNF 
 - [ ] Answer the question about the number of endmembers. 
 - [ ] Obtain Multispectral Image (Y)
 - [ ] Do a forward pass to see the details about the dimensions of the layers
+- [ ] Create a .txt with details about the Indian Pine dataset 
+- [ ] Create loss function
 
