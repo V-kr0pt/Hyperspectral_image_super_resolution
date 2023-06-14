@@ -14,9 +14,11 @@ class Model(torch.nn.Module):
             h_dim1: number of hidden units in the first hidden layer
             h_dim2: number of hidden units in the second hidden layer
             h_dim3: number of hidden units in the third hidden layer
-            N_endmembers: number of endmembers
+            n_endmembers: number of endmembers
+            GSD_ratio: ground sampling distance ratio between LrHSI and HrMSI
     '''
-    def __init__(self,Z, Y, h_dim1, h_dim2, h_dim3, n_endmembers):
+
+    def __init__(self,Z, Y, h_dim1, h_dim2, h_dim3, n_endmembers, GSD_ratio):
         # call the constructor of the parent class
         super(Model, self).__init__()
 
@@ -52,13 +54,13 @@ class Model(torch.nn.Module):
         self.SRFnorm = nn.BatchNorm2d(self.MSI_n_channels, affine=False)
 
         # PSF function
-        self.PSFconv = nn.Conv2d(1, 1, kernel_size=(3,3), padding=1, bias=False) # BIAS FALSE?
+        self.PSFconv = nn.Conv2d(1, 1, _, _, bias=False) # BIAS FALSE?
 
         # Endmembers Layer 
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
 
     def LrHSI_encoder(self, Z):
-        h = Z.view((-1, self.HSI_n_pixels)) 
+        h = Z.view((self.n_spectral, self.HSI_n_pixels)) 
         h = nn.LeakyReLU()(self.conv1_lr(h))
         h = nn.LeakyReLU()(self.conv2_lr(h))
         h = nn.LeakyReLU()(self.conv3_lr(h))
@@ -68,7 +70,7 @@ class Model(torch.nn.Module):
         return Ah
     
     def HrMSI_encoder(self, Y):
-        h = Y.view((-1, self.MSI_n_pixels)) 
+        h = Y.view((self.MSI_n_channels, self.MSI_n_pixels)) 
         h = nn.LeakyReLU()(self.conv1_hr(h))
         h = nn.LeakyReLU()(self.conv2_hr(h))
         h = nn.LeakyReLU()(self.conv3_hr(h))
@@ -78,19 +80,20 @@ class Model(torch.nn.Module):
         return A
     
     def endmembers(self, A):
-        h = A.view((-1, self.p))
+        h = A.view((self.p, -1))
         h = self.Econv(A)
-        return h.view((-1, self.n_spectral))    
-        
+        return h.view((-1, self.n_spectral))           
     
     def SRF(self, x):
-        x = x.view((-1, self.n_spectral, 1, 1))
+        x = x.view((self.n_spectral, -1))
         phi_num = self.SRFconv(x)
-        msi_img = self.SRFnorm(phi_num)        
-        return msi_img.view((self.MSI_n_pixels, self.MSI_n_channels))
+        phi = self.SRFnorm(phi_num)        
+        return phi.view((self.MSI_n_pixels, self.MSI_n_channels))
     
     def PSF(self, x):
-        pass
+        x = x.view((self.MSI_n_pixels, -1))
+        h = self.PSFconv(x)
+        return h.view((self.HSI_n_pixels, -1))
     
     def forward(self, Z, Y):
         # applying encoder
@@ -111,3 +114,18 @@ class Model(torch.nn.Module):
         lrMSI_Z = self.SRF(Z)
 
         return X_, Y_, Za, Zb, A, lrMSI_Z, lrMSI_Y
+    
+    def loss(self, X, Y, Za, Zb, A, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, delta):
+        # loss function
+        loss = nn.MSELoss()
+        # reconstruction loss
+        l1 = loss(X, Y)
+        l2 = loss(lrMSI_Z, lrMSI_Y)
+        l3 = loss(Za, Zb)
+        # regularization loss
+        l4 = torch.mean(torch.abs(A))
+        l5 = torch.mean(torch.abs(Za))
+        l6 = torch.mean(torch.abs(Zb))
+        # total loss
+        l = l1 + alpha*l2 + beta*l3 + gamma*l4 + delta*l5 + delta*l6
+        return l
