@@ -1,8 +1,8 @@
 - [x] Create a Github repository 
 - [x] Correct all conv layers to have as input the number of channels and the correct output
 - [x] Remove Adim  
-- [ ] Create PSF function 
-  - [ ] Put MN as input channel and mn as output channel in order to do MN x p become (mn x p)
+- [x] Create PSF function 
+  - [x] Put MN as input channel and mn as output channel in order to do MN x p become (mn x p)
 - [ ] Put clamp in PSF and SNF 
 - [ ] Answer the question about the number of endmembers. 
 - [ ] Obtain Multispectral Image (Y)
