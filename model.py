@@ -23,7 +23,7 @@ class Model(torch.nn.Module):
         # HSI parameters
         self.HSI_n_rows = Z.shape[0]
         self.HSI_n_cols = Z.shape[1]
-        self.n_spectral = Z.shape[3] # number of spectral bands
+        self.n_spectral = Z.shape[2] # number of spectral bands
         self.HSI_n_pixels = self.HSI_n_rows*self.HSI_n_cols
 
         # MSI parameters
