@@ -31,18 +31,19 @@ Maybe this sentence from the article can help us.
 ---
 
 - [x] The number of endmemembers it's something known by the user or we have to find it? If the second option, how?
-    "..."
+
+      the number of endmembers will be an hyperparameter. In pag 9, the article says that "Therefore, a larger number of endmembers allows the model to be more representative. Although the number of endmembers is assumed to be equal to the number of pure spectral bases in the linear unmixing, the number of endmembers can also be larger than the actual number of pure bases because the convolution weight matrix E can contain mixed material"
 
 - [ ] How to guarantee that A will have MN x p dimension, since the conv layer without any padding will reduce the dimension of the input?
     
-- [ ] PSF and SRF conv layers have the bias setted to off?
+- [ ] PSF and SRF conv layers have the bias set to off?
 
 - [ ] The article removed more bands than the correct Indian Pines dataset. What dataset we should use?
 
-- [ ] How to obtain the HrMSI data?
+- [ ] The article says in the subsection E.number of endmembers that "p" represents the kernel size of the shared convolutional layer. But in the subsection A. Coupled Autoencoder Network for Image Fusion, it says that all the convolutional kernel sizes are set to be 1x1, except for the PSF conv layer. This information also appears in the Figure 2, where the shared conv layer has as name 1x1Conv.  
 
-  Hypothesis: 
-    - The dataset that we have is already with HrHSI images, so we apply SRF to obtain HrMSI images.
-        "To simulate the HrMSI, the SRF for the blue to SWIR2 bands of the Landsat 8 were used" from Implementation Details pg. 6
-    - We can found it on the internet as a dataset like we found the HSI dataset. 
+- [x] How to obtain the HrMSI data?
+ 
+      The dataset that we have is already with HrHSI images, so we apply SRF to obtain HrMSI images. "To simulate the HrMSI, the SRF for the blue to SWIR2 bands of the Landsat 8 were used" from Implementation Details pg. 6
+    
 
