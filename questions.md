@@ -36,16 +36,14 @@ Maybe this sentence from the article can help us.
 
 - [ ] How to guarantee that A will have MN x p dimension, since the conv layer without any padding will reduce the dimension of the input?
     
-- [ ] PSF and SRF conv layers have the bias setted to off?
+- [ ] PSF and SRF conv layers have the bias set to off?
 
 - [ ] The article removed more bands than the correct Indian Pines dataset. What dataset we should use?
 
 - [ ] The article says in the subsection E.number of endmembers that "p" represents the kernel size of the shared convolutional layer. But in the subsection A. Coupled Autoencoder Network for Image Fusion, it says that all the convolutional kernel sizes are set to be 1x1, except for the PSF conv layer. This information also appears in the Figure 2, where the shared conv layer has as name 1x1Conv.  
 
-- [ ] How to obtain the HrMSI data?
-
-  Hypothesis: 
-    - The dataset that we have is already with HrHSI images, so we apply SRF to obtain HrMSI images.
-        "To simulate the HrMSI, the SRF for the blue to SWIR2 bands of the Landsat 8 were used" from Implementation Details pg. 6
-    - We can found it on the internet as a dataset like we found the HSI dataset. 
+- [x] How to obtain the HrMSI data?
+ 
+      The dataset that we have is already with HrHSI images, so we apply SRF to obtain HrMSI images. "To simulate the HrMSI, the SRF for the blue to SWIR2 bands of the Landsat 8 were used" from Implementation Details pg. 6
+    
 
