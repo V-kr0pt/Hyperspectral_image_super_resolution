@@ -54,7 +54,9 @@ class Model(torch.nn.Module):
         self.SRFnorm = nn.BatchNorm2d(self.MSI_n_channels, affine=False)
 
         # PSF function
-        self.PSFconv = nn.Conv2d(1, 1, _, _, bias=False) # BIAS FALSE?
+        # kernel size is the ratio of the GSDs between the Z and Y
+        # stride is the same as the kernel size
+        self.PSFconv = nn.Conv2d(1, 1, kernel_size=GSD_ratio, stride=GSD_ratio, bias=False) # BIAS FALSE?
 
         # Endmembers Layer 
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
