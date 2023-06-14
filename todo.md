@@ -6,4 +6,5 @@
 - [ ] Answer the question about the number of endmembers. 
 - [ ] Obtain Multispectral Image (Y)
 - [ ] Do a forward pass to see the details about the dimensions of the layers
+- [ ] Create loss function
 
