@@ -40,6 +40,8 @@ Maybe this sentence from the article can help us.
 
 - [ ] The article removed more bands than the correct Indian Pines dataset. What dataset we should use?
 
+- [ ] The article says in the subsection E.number of endmembers that "p" represents the kernel size of the shared convolutional layer. But in the subsection A. Coupled Autoencoder Network for Image Fusion, it says that all the convolutional kernel sizes are set to be 1x1, except for the PSF conv layer. This information also appears in the Figure 2, where the shared conv layer has as name 1x1Conv.  
+
 - [ ] How to obtain the HrMSI data?
 
   Hypothesis: 
