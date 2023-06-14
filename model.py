@@ -42,14 +42,17 @@ class Model(torch.nn.Module):
         self.conv4_lr = nn.Conv2d(h_dim3, self.A_dim, kernel_size=(1,1))
 
         # hr encoder part
-        self.conv1_hr = nn.Conv2d(self.MSI_n_pixels, h_dim1)
-        self.conv2_hr = nn.Conv2d(h_dim1, h_dim2) 
-        self.conv3_hr = nn.Conv2d(h_dim2, h_dim3) 
-        self.conv4_hr = nn.Conv2d(h_dim3, self.A_dim)
+        self.conv1_hr = nn.Conv2d(self.MSI_n_pixels, h_dim1, kernel_size=(1,1))
+        self.conv2_hr = nn.Conv2d(h_dim1, h_dim2, kernel_size=(1,1)) 
+        self.conv3_hr = nn.Conv2d(h_dim2, h_dim3, kernel_size=(1,1)) 
+        self.conv4_hr = nn.Conv2d(h_dim3, self.A_dim, kernel_size=(1,1))
 
         # SRF function
         self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_pixels, kernel_size=(1,1), bias=False) # BIAS FALSE?
         self.SRFnorm = nn.BatchNorm2d(self.MSI_n_pixels, affine=False)
+
+        # PSF function
+        self.PSFconv = nn.Conv2d(1, 1, kernel_size=(3,3), padding=1, bias=False) # BIAS FALSE?
 
         # Endmembers Layer 
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
@@ -85,6 +88,9 @@ class Model(torch.nn.Module):
         phi_num = self.SRFconv(x)
         msi_img = self.SRFnorm(phi_num)        
         return msi_img.view((self.MSI_n_pixels, self.MSI_n_channels))
+    
+    def PSF(self, x):
+        pass
     
     def forward(self, Z, Y):
         # applying encoder
