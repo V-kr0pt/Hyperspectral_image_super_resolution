@@ -30,7 +30,14 @@ Maybe this sentence from the article can help us.
 
 ---
 
+- [x] The number of endmemembers it's something known by the user or we have to find it? If the second option, how?
+    "..."
+
+- [ ] How to guarantee that A will have MN x p dimension, since the conv layer without any padding will reduce the dimension of the input?
+    
 - [ ] PSF and SRF conv layers have the bias setted to off?
+
+- [ ] The article removed more bands than the correct Indian Pines dataset. What dataset we should use?
 
 - [ ] How to obtain the HrMSI data?
 
@@ -38,3 +45,4 @@ Maybe this sentence from the article can help us.
     - The dataset that we have is already with HrHSI images, so we apply SRF to obtain HrMSI images.
         "To simulate the HrMSI, the SRF for the blue to SWIR2 bands of the Landsat 8 were used" from Implementation Details pg. 6
     - We can found it on the internet as a dataset like we found the HSI dataset. 
+
