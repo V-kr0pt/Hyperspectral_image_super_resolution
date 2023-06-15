@@ -31,10 +31,10 @@ class Model(torch.nn.Module):
 
         # n_spectral = > n_endmembers
         
-        h_interval_lr = (n_endmembers - self.n_spectral) // 4
-        self.h_dim1_lr_encoder = self.n_spectral + h_interval_lr
-        self.h_dim2_lr_encoder = self.h_dim1_lr_encoder + h_interval_lr
-        self.h_dim3_lr_encoder = self.h_dim2_lr_encoder + h_interval_lr
+        #h_interval_lr = (n_endmembers - self.n_spectral) // 4
+        #self.h_dim1_lr_encoder = self.n_spectral + h_interval_lr
+        #self.h_dim2_lr_encoder = self.h_dim1_lr_encoder + h_interval_lr
+        #self.h_dim3_lr_encoder = self.h_dim2_lr_encoder + h_interval_lr
 
 
 
@@ -44,25 +44,26 @@ class Model(torch.nn.Module):
         self.MSI_n_channels = Y.shape[2] # number of color channels
         self.MSI_n_pixels = self.MSI_n_rows*self.MSI_n_cols
 
-        h_interval_hr = (self.MSI_n_channels - self.n_spectral) // 4
-        self.h_dim1_hr_encoder = self.n_spectral + h_interval_hr
-        self.h_dim2_hr_encoder = self.h_dim1_hr_encoder + h_interval_hr
-        self.h_dim3_hr_encoder = self.h_dim2_hr_encoder + h_interval_hr
+        #h_interval_hr = (self.MSI_n_channels - self.n_spectral) // 4
+        #self.h_dim1_hr_encoder = self.n_spectral + h_interval_hr
+        #self.h_dim2_hr_encoder = self.h_dim1_hr_encoder + h_interval_hr
+        #self.h_dim3_hr_encoder = self.h_dim2_hr_encoder + h_interval_hr
 
         # Number of endmembers
         self.p = n_endmembers
-
+        
         # lr encoder part
-        self.conv1_lr = nn.Conv2d(self.n_spectral, self.h_dim1_lr_encoder, kernel_size=(1,1))  
-        self.conv2_lr = nn.Conv2d(self.h_dim1_lr_encoder, self.h_dim2_lr_encoder, kernel_size=(1,1))  
-        self.conv3_lr = nn.Conv2d(self.h_dim2_lr_encoder, self.h_dim3_lr_encoder, kernel_size=(1,1))    
-        self.conv4_lr = nn.Conv2d(self.h_dim3_lr_encoder, self.p, kernel_size=(1,1))
+        #self.conv1_lr = nn.Conv2d(self.n_spectral, self.h_dim1_lr_encoder, kernel_size=(1,1))  
+        self.conv1_lr = nn.Conv2d(1, 2, kernel_size=(1,1))  
+        self.conv2_lr = nn.Conv2d(2, 4, kernel_size=(1,1))  
+        self.conv3_lr = nn.Conv2d(4, 2, kernel_size=(1,1))    
+        self.conv4_lr = nn.Conv2d(2, 1, kernel_size=(1,1))
 
         # hr encoder part
-        self.conv1_hr = nn.Conv2d(self.MSI_n_channels, self.h_dim1_hr_encoder, kernel_size=(1,1))
-        self.conv2_hr = nn.Conv2d(self.h_dim1_hr_encoder, self.h_dim2_hr_encoder, kernel_size=(1,1)) 
-        self.conv3_hr = nn.Conv2d(self.h_dim2_hr_encoder, self.h_dim3_hr_encoder, kernel_size=(1,1)) 
-        self.conv4_hr = nn.Conv2d(self.h_dim3_hr_encoder, self.p, kernel_size=(1,1))
+        self.conv1_hr = nn.Conv2d(1, 2, kernel_size=(1,1))  
+        self.conv2_hr = nn.Conv2d(2, 4, kernel_size=(1,1))  
+        self.conv3_hr = nn.Conv2d(4, 2, kernel_size=(1,1))    
+        self.conv4_hr = nn.Conv2d(2, 1, kernel_size=(1,1))
 
         # SRF function
         self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_channels, kernel_size=(1,1), bias=False) # BIAS FALSE?
@@ -78,7 +79,7 @@ class Model(torch.nn.Module):
 
     def LrHSI_encoder(self, Z):
         # we reshape Z to be (L x mn) where L is the number of spectral bands
-        h = Z.reshape((self.n_spectral, self.HSI_n_pixels)).float()
+        h = Z.reshape((1, self.n_spectral, self.HSI_n_pixels)).float()
         # we apply the convolutional layers
         h = F.leaky_relu(self.conv1_lr(h))
         h = F.leaky_relu(self.conv2_lr(h))
@@ -90,11 +91,11 @@ class Model(torch.nn.Module):
     
     def HrMSI_encoder(self, Y):
         # we reshape Y to be (l x mn) where l is the number of color channels
-        h = Y.view((self.MSI_n_channels, self.MSI_n_pixels)) 
+        h = Y.reshape((1, self.MSI_n_channels, self.MSI_n_pixels)).float()
         # we apply the convolutional layers
-        h = nn.LeakyReLU()(self.conv1_hr(h))
-        h = nn.LeakyReLU()(self.conv2_hr(h))
-        h = nn.LeakyReLU()(self.conv3_hr(h))
+        h = F.leaky_relu(self.conv1_lr(h))
+        h = F.leaky_relu(self.conv2_lr(h))
+        h = F.leaky_relu(self.conv3_lr(h))
         A = self.conv4_hr(h) 
         # apply clamp to A
         A = torch.clamp(A, min=0, max=1)
