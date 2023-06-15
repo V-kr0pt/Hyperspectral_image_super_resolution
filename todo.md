@@ -4,7 +4,7 @@
 - [x] Create PSF function 
   - [x] Put MN as input channel and mn as output channel in order to do MN x p become (mn x p)
 - [x] Answer the question about the number of endmembers. 
-- [ ] Create loss function
+- [x] Create loss function
 - [ ] Obtain Multispectral Image (Y) 
 - [ ] Do a forward pass to see the details about the dimensions of the layers
 - [ ] Create Train loop

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
 
@@ -136,19 +137,30 @@ class Model(torch.nn.Module):
         Y_ = self.SRF(X_) # hrMSI (MN x n_spectral)
         lrMSI_Z = self.SRF(Z)
 
-        return X_, Y_, Za, Zb, A, lrMSI_Z, lrMSI_Y
+        return X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y
     
-    def loss(self, X, Y, Za, Zb, A, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, delta):
+    def loss(self, Z, Y, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, delta, u, v):
         # loss function
-        loss = nn.MSELoss()
+        loss = nn.L1Loss(ord=1)
         # reconstruction loss
-        l1 = loss(X, Y)
-        l2 = loss(lrMSI_Z, lrMSI_Y)
-        l3 = loss(Za, Zb)
-        # regularization loss
-        l4 = torch.mean(torch.abs(A))
-        l5 = torch.mean(torch.abs(Za))
-        l6 = torch.mean(torch.abs(Zb))
+        l1 = loss(Za, Z)
+        l2 = loss(Zb, Z)
+        l3 = loss(Y_, Y)
+        l4 = loss(lrMSI_Y, lrMSI_Z)
+        Lbase = l1 + alpha*l2 + beta*l3 + gamma*l4
+        # Constraint sum2one loss
+        l1 = loss(A.sum(dim=1), torch.ones(A.shape[0]))
+        l2 = loss(Ah_a.sum(dim=1), torch.ones(Ah_a.shape[0]))
+        l3 = loss(Ah_b.sum(dim=1), torch.ones(Ah_b.shape[0]))
+        Lsum2one = l1 + l2 + l3
+        # Constraint sparsity loss
+        a = 1e-4 # sparsity parameter
+        Lsparse = 0
+        # for each element in A
+        for aij in A:
+            # Kullback-Leibler divergence
+            Lsparse += a*np.log(a/aij) + (1-a)*np.log((1-a)/(1-aij))
+        
         # total loss
-        l = l1 + alpha*l2 + beta*l3 + gamma*l4 + delta*l5 + delta*l6
+        l = Lbase + u * Lsum2one + v * Lsparse
         return l
