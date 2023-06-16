@@ -158,9 +158,7 @@ class Model(torch.nn.Module):
     def forward(self, Z, Y):
         # applying encoder
         Ah_a = self.LrHSI_encoder(Z) # abundance (p x m x n)
-        print(f'Shape Ah_a {Ah_a.shape}')
         A = self.HrMSI_encoder(Y) # abundance (p x M x N)
-        print(f'Shape A {A.shape}')
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (p x m x n)
@@ -168,11 +166,8 @@ class Model(torch.nn.Module):
 
         # applying endmembers
         Za = self.endmembers(Ah_a) # lrHSI (n_spectral x m x n)
-        print(Za.shape)
         Zb = self.endmembers(Ah_b) # lrHSI (n_spectral x m x n)
-        print(Zb.shape)
         X_ = self.endmembers(A)  # hrHSI (n_spectral x m x n)
-        print(X_.shape)
 
         # applying SRF
         Y_ = self.SRF(X_) # hrMSI 
@@ -184,7 +179,7 @@ class Model(torch.nn.Module):
     
     def loss(self, Z, Y, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v):
         # loss function
-        loss = nn.L1Loss(ord=1)
+        loss = nn.L1Loss()
         # reconstruction loss
         l1 = loss(Za, Z)
         l2 = loss(Zb, Z)
