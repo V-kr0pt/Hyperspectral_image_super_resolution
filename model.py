@@ -73,6 +73,7 @@ class Model(torch.nn.Module):
         # PSF function
         # kernel size is the ratio of the GSDs between the Z and Y
         # stride is the same as the kernel size
+        
         self.PSFconv = nn.Conv2d(1, 1, kernel_size=self.GSD_ratio, stride=self.GSD_ratio, bias=False)
 
         # Endmembers Layer 
@@ -124,7 +125,6 @@ class Model(torch.nn.Module):
         return spectral_degenerated.view((-1, self.MSI_n_channels))
     
     def PSF(self, x):
-        '''
         # here x will be A (MN x p) or Y (MN x l) 
         x = x.view((self.MSI_n_pixels, -1))
         # the spatial generated will be Ah (mn x p) or Ylr (mn x l)
@@ -136,8 +136,6 @@ class Model(torch.nn.Module):
             # kernel size and stride
             spatial_degenerated[:, band] = self.PSFconv(x[:,band])
         return spatial_degenerated
-        '''
-        return self.PSFconv(x)
     
     def forward(self, Z, Y):
         # applying encoder
