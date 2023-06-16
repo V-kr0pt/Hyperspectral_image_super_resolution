@@ -118,15 +118,27 @@ class Model(torch.nn.Module):
     def SRF(self, x):
         # here x will be Z (mn x L) or E (p x L)
         # we'll reshape it to the spectral dimension be the first one
-        x = x.view((self.n_spectral, -1))
+        #x = x.view((self.n_spectral, -1))
         # The conv layer simulates the numerator of SRF function
         phi_num = self.SRFconv(x)
+        print(f'phi_num shape: {phi_num.shape}')
         # After normalize, we obtain the spectral degenerated object
+        
+        # The nn.BatchNorm2d layer expects a 4D input tensor with dimensions (batch_size, num_channels, height, width)
+        '''
+            By using unsqueeze(0), we add a singleton dimension at index 0 to the x_conv tensor, which represents the batch size. 
+            This allows us to provide the expected 4D input to the batch normalization layer.
+            SOURCE: GPT, Chat
+        '''
+        phi_num = phi_num.unsqueeze(0)        
         spectral_degenerated = self.SRFnorm(phi_num) 
+        spectral_degenerated = spectral_degenerated.squeeze(0)
+
         # apply clamp to ensure that   
         spectral_degenerated = torch.clamp(spectral_degenerated, min=0, max=1)  
         # we reshape it to the original shape it to (mn x l) if Ylr or (p x l) if Em 
-        return spectral_degenerated.view((-1, self.MSI_n_channels))
+        #return spectral_degenerated.view((-1, self.MSI_n_channels))
+        return spectral_degenerated
     
     def PSF(self, x):
         # here x will be A (p x M x N) or Y (l x M x N) 
@@ -154,18 +166,20 @@ class Model(torch.nn.Module):
         lrMSI_Y = self.PSF(Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()) 
 
         # applying endmembers
-        Za = self.endmembers(Ah_a) # lrHSI (mn x n_spectral)
+        Za = self.endmembers(Ah_a) # lrHSI (n_spectral x m x n)
         print(Za.shape)
-        Zb = self.endmembers(Ah_b) # lrHSI (mn x n_spectral)
+        Zb = self.endmembers(Ah_b) # lrHSI (n_spectral x m x n)
         print(Zb.shape)
-        X_ = self.endmembers(A)  # hrHSI (MN x n_spectral)
+        X_ = self.endmembers(A)  # hrHSI (n_spectral x m x n)
         print(X_.shape)
 
         # applying SRF
-        Y_ = self.SRF(X_) # hrMSI (MN x n_spectral)
-        lrMSI_Z = self.SRF(Z)
+        Y_ = self.SRF(X_) # hrMSI 
 
+        h = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
+        lrMSI_Z = self.SRF(h)
         return X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y
+    
     
     def loss(self, Z, Y, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v):
         # loss function
