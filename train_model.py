@@ -19,12 +19,13 @@ def main():
 
     # Define hyperparameters
 
-    # See values in paper
-    alpha = 1000
-    beta = 1000
+    # The values of the hyperparameters are the setted values from the paper
+    alpha = 10
+    beta = 10
     gamma = 100
     u = 0.001
     v = 0.001
+    # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
     num_epochs = 10
 
     train(CCNN, optimizer, data, data_rgb, alpha, beta, gamma, u, v, num_epochs)
