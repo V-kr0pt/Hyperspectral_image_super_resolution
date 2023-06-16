@@ -83,8 +83,8 @@ class Model(torch.nn.Module):
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
 
     def LrHSI_encoder(self, Z):
-        # we reshape Z to be L x m x n, i.e. (C_in, H_in, W_in)
-        h = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
+        # # we reshape Z to be L x m x n, i.e. (C_in, H_in, W_in)
+        h = Z #.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
         # we apply the convolutional layers
         h = F.leaky_relu(self.conv1_lr(h))
         h = F.leaky_relu(self.conv2_lr(h))
@@ -95,8 +95,8 @@ class Model(torch.nn.Module):
         return Ah
     
     def HrMSI_encoder(self, Y):
-        # we reshape Y to be l x M x N, i.e. (C_in, H_in, W_in)
-        h = Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()        
+        # # we reshape Y to be l x M x N, i.e. (C_in, H_in, W_in)
+        h = Y #.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()        
         # we apply the convolutional layers
         h = F.leaky_relu(self.conv1_hr(h))
         h = F.leaky_relu(self.conv2_hr(h))
@@ -120,7 +120,7 @@ class Model(torch.nn.Module):
         #x = x.view((self.n_spectral, -1))
         # The conv layer simulates the numerator of SRF function
         phi_num = self.SRFconv(x)
-        print(f'phi_num shape: {phi_num.shape}')
+        # print(f'phi_num shape: {phi_num.shape}')
         # After normalize, we obtain the spectral degenerated object
         
         # The nn.BatchNorm2d layer expects a 4D input tensor with dimensions (batch_size, num_channels, height, width)
@@ -156,13 +156,16 @@ class Model(torch.nn.Module):
         return torch.from_numpy(np.array(spatial_degenerated))
     
     def forward(self, Z, Y):
+        # reshaping Z and Y to be (p x m x n) and (l x M x N) respectively
+        Z = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
+        Y = Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()
         # applying encoder
         Ah_a = self.LrHSI_encoder(Z) # abundance (p x m x n)
         A = self.HrMSI_encoder(Y) # abundance (p x M x N)
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (p x m x n)
-        lrMSI_Y = self.PSF(Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()) 
+        lrMSI_Y = self.PSF(Y) 
 
         # applying endmembers
         Za = self.endmembers(Ah_a) # lrHSI (n_spectral x m x n)
@@ -172,8 +175,8 @@ class Model(torch.nn.Module):
         # applying SRF
         Y_ = self.SRF(X_) # hrMSI 
 
-        h = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
-        lrMSI_Z = self.SRF(h)
+        # h = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
+        lrMSI_Z = self.SRF(Z)
         return X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y
     
     
@@ -181,6 +184,8 @@ class Model(torch.nn.Module):
         # loss function
         loss = nn.L1Loss()
         # reconstruction loss
+        # print(f"Za.shape = {Za.shape}")
+        # print(f"Z.shape = {Z.shape}")
         l1 = loss(Za, Z)
         l2 = loss(Zb, Z)
         l3 = loss(Y_, Y)
