@@ -33,13 +33,12 @@ def main():
 # Create loss loop
 
 def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs):
-
+    
     for epoch in range(num_epochs):
         optimizer.zero_grad()  # Clear gradients
-
         # Forward pass
-        X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = model_(Z_train, Y_train).forward()
-
+        X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = model_.forward(Z_train, Y_train)
+        
         # Compute the loss
         loss = model_.loss(Z_train, Y_train, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v)
 
