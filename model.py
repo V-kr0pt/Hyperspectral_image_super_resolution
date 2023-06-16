@@ -19,7 +19,7 @@ class Model(torch.nn.Module):
             GSD_ratio: ground sampling distance ratio between LrHSI and HrMSI
     '''
 
-    def __init__(self,Z, Y, h_dim1, h_dim2, h_dim3, n_endmembers, GSD_ratio):
+    def __init__(self,Z, Y, n_endmembers=100): # n_endmembers and GSD_ratio defined for Indian Pines dataset
         # call the constructor of the parent class
         super(Model, self).__init__()
 
@@ -29,26 +29,42 @@ class Model(torch.nn.Module):
         self.n_spectral = Z.shape[2] # number of spectral bands
         self.HSI_n_pixels = self.HSI_n_rows*self.HSI_n_cols
 
+        # n_spectral = > n_endmembers
+        
+        h_interval_lr = (n_endmembers - self.n_spectral) // 4
+        self.h_dim1_lr_encoder = self.n_spectral + h_interval_lr
+        self.h_dim2_lr_encoder = self.h_dim1_lr_encoder + h_interval_lr
+        self.h_dim3_lr_encoder = self.h_dim2_lr_encoder + h_interval_lr
+
+        # assuming that all images are squared
+        self.GSD_ratio = Y.shape[0] / Z.shape[0]
+
         # MSI parameters
         self.MSI_n_rows = Y.shape[0]
         self.MSI_n_cols = Y.shape[1]
         self.MSI_n_channels = Y.shape[2] # number of color channels
         self.MSI_n_pixels = self.MSI_n_rows*self.MSI_n_cols
 
+        h_interval_hr = (self.MSI_n_channels - self.n_spectral) // 4
+        self.h_dim1_hr_encoder = self.n_spectral + h_interval_hr
+        self.h_dim2_hr_encoder = self.h_dim1_hr_encoder + h_interval_hr
+        self.h_dim3_hr_encoder = self.h_dim2_hr_encoder + h_interval_hr
+
         # Number of endmembers
         self.p = n_endmembers
-
+        
         # lr encoder part
-        self.conv1_lr = nn.Conv2d(self.n_spectral, h_dim1, kernel_size=(1,1))  
-        self.conv2_lr = nn.Conv2d(h_dim1, h_dim2, kernel_size=(1,1))  
-        self.conv3_lr = nn.Conv2d(h_dim2, h_dim3, kernel_size=(1,1))    
-        self.conv4_lr = nn.Conv2d(h_dim3, self.p, kernel_size=(1,1))
+        #self.conv1_lr = nn.Conv2d(self.n_spectral, self.h_dim1_lr_encoder, kernel_size=(1,1))  
+        self.conv1_lr = nn.Conv2d(self.n_spectral, self.h_dim1_lr_encoder, kernel_size=(1,1))  
+        self.conv2_lr = nn.Conv2d(self.h_dim1_lr_encoder, self.h_dim2_lr_encoder, kernel_size=(1,1))  
+        self.conv3_lr = nn.Conv2d(self.h_dim2_lr_encoder, self.h_dim3_lr_encoder, kernel_size=(1,1))    
+        self.conv4_lr = nn.Conv2d(self.h_dim3_lr_encoder, self.p, kernel_size=(1,1))
 
         # hr encoder part
-        self.conv1_hr = nn.Conv2d(self.MSI_n_channels, h_dim1, kernel_size=(1,1))
-        self.conv2_hr = nn.Conv2d(h_dim1, h_dim2, kernel_size=(1,1)) 
-        self.conv3_hr = nn.Conv2d(h_dim2, h_dim3, kernel_size=(1,1)) 
-        self.conv4_hr = nn.Conv2d(h_dim3, self.p, kernel_size=(1,1))
+        self.conv1_hr = nn.Conv2d(self.MSI_n_channels, self.h_dim1_hr_encoder, kernel_size=(1,1))  
+        self.conv2_hr = nn.Conv2d(self.h_dim1_hr_encoder, self.h_dim2_hr_encoder, kernel_size=(1,1))  
+        self.conv3_hr = nn.Conv2d(self.h_dim2_hr_encoder, self.h_dim3_hr_encoder, kernel_size=(1,1))    
+        self.conv4_hr = nn.Conv2d(self.h_dim3_hr_encoder, self.p, kernel_size=(1,1))
 
         # SRF function
         self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_channels, kernel_size=(1,1), bias=False) # BIAS FALSE?
@@ -57,30 +73,32 @@ class Model(torch.nn.Module):
         # PSF function
         # kernel size is the ratio of the GSDs between the Z and Y
         # stride is the same as the kernel size
-        self.PSFconv = nn.Conv2d(1, 1, kernel_size=GSD_ratio, stride=GSD_ratio, bias=False) # BIAS FALSE?
+        
+        self.PSFconv = nn.Conv2d(1, 1, kernel_size=self.GSD_ratio, stride=self.GSD_ratio, bias=False)
 
         # Endmembers Layer 
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
 
     def LrHSI_encoder(self, Z):
-        # we reshape Z to be (L x mn) where L is the number of spectral bands
-        h = Z.view((self.n_spectral, self.HSI_n_pixels)) 
+        # we reshape Z to be L x m x n, i.e. (C_in, H_in, W_in)
+        h = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
         # we apply the convolutional layers
-        h = nn.LeakyReLU()(self.conv1_lr(h))
-        h = nn.LeakyReLU()(self.conv2_lr(h))
-        h = nn.LeakyReLU()(self.conv3_lr(h))
+        h = F.leaky_relu(self.conv1_lr(h))
+        h = F.leaky_relu(self.conv2_lr(h))
+        h = F.leaky_relu(self.conv3_lr(h))
         Ah = self.conv4_lr(h) 
         # apply clamp to A to ensure that the abundance values are between 0 and 1
         Ah = torch.clamp(Ah, min=0, max=1)
         return Ah
     
     def HrMSI_encoder(self, Y):
-        # we reshape Y to be (l x mn) where l is the number of color channels
-        h = Y.view((self.MSI_n_channels, self.MSI_n_pixels)) 
+        # we reshape Y to be l x M x N, i.e. (C_in, H_in, W_in)
+        h = Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()
+        
         # we apply the convolutional layers
-        h = nn.LeakyReLU()(self.conv1_hr(h))
-        h = nn.LeakyReLU()(self.conv2_hr(h))
-        h = nn.LeakyReLU()(self.conv3_hr(h))
+        h = F.leaky_relu(self.conv1_hr(h))
+        h = F.leaky_relu(self.conv2_hr(h))
+        h = F.leaky_relu(self.conv3_hr(h))
         A = self.conv4_hr(h) 
         # apply clamp to A
         A = torch.clamp(A, min=0, max=1)
@@ -122,7 +140,9 @@ class Model(torch.nn.Module):
     def forward(self, Z, Y):
         # applying encoder
         Ah_a = self.LrHSI_encoder(Z) # abundance (mn x p)
+        print(f'Shape Ah_a {Ah_a.shape}')
         A = self.HrMSI_encoder(Y) # abundance (MN x p)
+        print(f'Shape A {A.shape}')
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (mn x p)
@@ -139,7 +159,7 @@ class Model(torch.nn.Module):
 
         return X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y
     
-    def loss(self, Z, Y, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, delta, u, v):
+    def loss(self, Z, Y, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v):
         # loss function
         loss = nn.L1Loss(ord=1)
         # reconstruction loss
