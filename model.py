@@ -75,16 +75,15 @@ class Model(torch.nn.Module):
 
         # PSF function
         # kernel size is the ratio of the GSDs between the Z and Y
-        # stride is the same as the kernel size
-        
+        # stride is the same as the kernel size        
         self.PSFconv = nn.Conv2d(1, 1, kernel_size=self.GSD_ratio, stride=self.GSD_ratio, bias=False)
 
         # Endmembers Layer 
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
 
     def LrHSI_encoder(self, Z):
-        # # we reshape Z to be L x m x n, i.e. (C_in, H_in, W_in)
-        h = Z #.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
+        #  we reshape Z to be L x m x n, i.e. (C_in, H_in, W_in)
+        h = Z 
         # we apply the convolutional layers
         h = F.leaky_relu(self.conv1_lr(h))
         h = F.leaky_relu(self.conv2_lr(h))
@@ -96,7 +95,7 @@ class Model(torch.nn.Module):
     
     def HrMSI_encoder(self, Y):
         # # we reshape Y to be l x M x N, i.e. (C_in, H_in, W_in)
-        h = Y #.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()        
+        h = Y         
         # we apply the convolutional layers
         h = F.leaky_relu(self.conv1_hr(h))
         h = F.leaky_relu(self.conv2_hr(h))
@@ -107,20 +106,14 @@ class Model(torch.nn.Module):
         return A
     
     def endmembers(self, A):
-        # we reshape A to be (p x M x N) or (p x m x n) where p is the number of endmembers
-        #h = A.view((self.p, -1))
-        # apply the conv layer (matrix multiplication) to obtain Z' (mn x L) or X' (MN x L)
-        h = self.Econv(A)
-        #return h.view((-1, self.n_spectral))           
-        return h # Here we expect h to be (p x m x n ) or (p x M x N)
+        # A will be (p x M x N) or (p x m x n) 
+        h = self.Econv(A)        
+        return h # Here we expect h to be (p x m x n) or (p x M x N)
     
     def SRF(self, x):
-        # here x will be Z (mn x L) or E (p x L)
-        # we'll reshape it to the spectral dimension be the first one
-        #x = x.view((self.n_spectral, -1))
+        # here x will be Z (L x m x n) or E (L x p x 1 x 1)
         # The conv layer simulates the numerator of SRF function
         phi_num = self.SRFconv(x)
-        # print(f'phi_num shape: {phi_num.shape}')
         # After normalize, we obtain the spectral degenerated object
         
         # The nn.BatchNorm2d layer expects a 4D input tensor with dimensions (batch_size, num_channels, height, width)
@@ -137,21 +130,18 @@ class Model(torch.nn.Module):
 
         # apply clamp to ensure that the values are between 0 and 1 
         spectral_degenerated = torch.clamp(spectral_degenerated, min=0, max=1)  
-        # we reshape it to the original shape it to (mn x l) if Ylr or (p x l) if Em 
-        #return spectral_degenerated.view((-1, self.MSI_n_channels))
+
         return spectral_degenerated
     
     def PSF(self, x):
         # here x will be A (p x M x N) or Y (l x M x N) 
-        #x = x.view((self.MSI_n_pixels, -1))
         # the spatial generated will be Ah (mn x p) or Ylr (mn x l)
         spatial_degenerated = []
         # for each band, p or l
         for band in range(x.shape[0]):
             band_image_tensor = x[band, :, :].reshape((1, x.shape[1], x.shape[2]))
             # the spatial_degenerated cube will be the PSF applied to A or Y 
-            # the spatial resolution after do that will be (m x n) due to the 
-            # kernel size and stride
+            # the spatial resolution after do that will be (m x n) due to the kernel size and stride
             spatial_degenerated.append(self.PSFconv(band_image_tensor).detach().numpy().reshape([x.shape[1], x.shape[2]]))
         return torch.from_numpy(np.array(spatial_degenerated))
     
@@ -175,28 +165,27 @@ class Model(torch.nn.Module):
         # applying SRF
         Y_ = self.SRF(X_) # hrMSI 
 
-        # h = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
         lrMSI_Z = self.SRF(Z)
         return X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y
     
     
     def loss(self, Z, Y, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v):
-        print("Computing loss")
         # loss function
         loss = nn.L1Loss()
+
         # reconstruction loss
-        print(f"Za.shape = {Za.shape}")
-        print(f"Z.shape = {Z.shape}")
         l1 = loss(Za, Z)
         l2 = loss(Zb, Z)
         l3 = loss(Y_, Y)
         l4 = loss(lrMSI_Y, lrMSI_Z)
         Lbase = l1 + alpha*l2 + beta*l3 + gamma*l4
+
         # Constraint sum2one loss
         l1 = loss(A.sum(dim=0), torch.ones((A.shape[1], A.shape[2])))
         l2 = loss(Ah_a.sum(dim=0), torch.ones((Ah_a.shape[1], Ah_a.shape[2])))
         l3 = loss(Ah_b.sum(dim=0), torch.ones((Ah_a.shape[1], Ah_b.shape[2])))
         Lsum2one = l1 + l2 + l3
+
         # Constraint sparsity loss
         a = torch.tensor(1e-4, dtype=torch.float) # sparsity parameter
         target_sparse = a.expand_as(A) 
@@ -206,11 +195,7 @@ class Model(torch.nn.Module):
         s1 = torch.sum(p * torch.log(p / q))
         s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q))) 
         Lsparse = s1 + s2
-        # for each element in A
-        # for aij in A.detach().numpy():
-        #     # Kullback-Leibler divergence
-        #     Lsparse += a*np.log(a/aij) + (1-a)*np.log((1-a)/(1-aij))
-        # print(type(Lsparse))
+
         # total loss
         l = Lbase + u * Lsum2one + v * Lsparse
         return l
