@@ -13,7 +13,7 @@ def main():
     data_rgb = torch.from_numpy(data_rgb[list(data_rgb.keys())[-1]])
 
     # Instance model object
-    CCNN = model.Model(data, data_rgb, n_endmembers=100, GSD_ratio=4)
+    CCNN = model.Model(data, data_rgb, n_endmembers=100)
     # Create optimizer
     optimizer = optim.Adam(CCNN.parameters(), lr=0.001)
 

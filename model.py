@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
+import matplotlib.pyplot as plt
 
 # defining the model class, inheriting from nn.Module
 class Model(torch.nn.Module):
@@ -39,6 +40,8 @@ class Model(torch.nn.Module):
         # assuming that all images are squared
         self.GSD_ratio = Y.shape[0] / Z.shape[0]
 
+        assert int(self.GSD_ratio) == self.GSD_ratio, "GSD ratio is not an integer, could you check that?"
+        self.GSD_ratio = int(self.GSD_ratio)
         # MSI parameters
         self.MSI_n_rows = Y.shape[0]
         self.MSI_n_cols = Y.shape[1]
@@ -125,23 +128,35 @@ class Model(torch.nn.Module):
         return spectral_degenerated.view((-1, self.MSI_n_channels))
     
     def PSF(self, x):
-        # here x will be A (MN x p) or Y (MN x l) 
-        x = x.view((self.MSI_n_pixels, -1))
+        # here x will be A (p x M x N) or Y (l x M x N) 
+        '''
+            BUG HERE, I THINK WE NEED IT TO BE M x N x p or l
+        '''
+        print(f'x.shape: {x.shape}')
+        #x = x.view((self.MSI_n_pixels, -1))
         # the spatial generated will be Ah (mn x p) or Ylr (mn x l)
         spatial_degenerated = np.zeros((self.HSI_n_pixels, x.shape[-1]))
         # for each band, p or l
-        for band in range(x.shape[-1]):
+        for band in range(x.shape[0]):
+            band_image_tensor = x[band, :, :]
+            print(band_image_tensor.shape)
             # the spatial_degenerated object will be the PSF applied to A or Y 
             # the spatial resolution after do that will be mn due to the 
             # kernel size and stride
+            plt.imshow(band_image_tensor.detach().numpy())
+            plt.show()
+            break
             spatial_degenerated[:, band] = self.PSFconv(x[:,band])
         return spatial_degenerated
     
     def forward(self, Z, Y):
         # applying encoder
-        Ah_a = self.LrHSI_encoder(Z) # abundance (mn x p)
+        '''
+            BUG HERE, I THINK WE NEED IT TO BE M x N x p or l, I MEAN, Ah_a and A are inverted
+        '''
+        Ah_a = self.LrHSI_encoder(Z) # abundance (p x m x n)
         print(f'Shape Ah_a {Ah_a.shape}')
-        A = self.HrMSI_encoder(Y) # abundance (MN x p)
+        A = self.HrMSI_encoder(Y) # abundance (p x M x N)
         print(f'Shape A {A.shape}')
 
         # applying PSF
