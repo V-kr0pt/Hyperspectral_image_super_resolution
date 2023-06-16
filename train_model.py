@@ -19,14 +19,14 @@ def main():
 
     # Define hyperparameters
 
-    # The values of the hyperparameters are the setted values from the paper
+    # The values of the hyperparameters are the set values from paper
     alpha = 10
     beta = 10
     gamma = 100
     u = 0.001
     v = 0.001
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
-    num_epochs = 10
+    num_epochs = 1
 
     train(CCNN, optimizer, data, data_rgb, alpha, beta, gamma, u, v, num_epochs)
 
@@ -34,12 +34,17 @@ def main():
 # Create loss loop
 
 def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs):
-    
+
+    # reshape the data, always the channels first
+    Z_train = Z_train.permute(2, 0, 1) 
+    Y_train = Y_train.permute(2, 0, 1)
+
+    # Training loop 
     for epoch in range(num_epochs):
         optimizer.zero_grad()  # Clear gradients
         # Forward pass
-        X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = model_.forward(Z_train, Y_train)
-        
+        X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = model_.forward(Z_train, Y_train)  
+ 
         # Compute the loss
         loss = model_.loss(Z_train, Y_train, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v)
 
