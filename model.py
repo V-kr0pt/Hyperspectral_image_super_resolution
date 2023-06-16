@@ -129,31 +129,20 @@ class Model(torch.nn.Module):
     
     def PSF(self, x):
         # here x will be A (p x M x N) or Y (l x M x N) 
-        '''
-            BUG HERE, I THINK WE NEED IT TO BE M x N x p or l
-        '''
-        print(f'x.shape: {x.shape}')
         #x = x.view((self.MSI_n_pixels, -1))
         # the spatial generated will be Ah (mn x p) or Ylr (mn x l)
-        spatial_degenerated = np.zeros((self.HSI_n_pixels, x.shape[-1]))
+        spatial_degenerated = []
         # for each band, p or l
         for band in range(x.shape[0]):
-            band_image_tensor = x[band, :, :]
-            print(band_image_tensor.shape)
+            band_image_tensor = x[band, :, :].reshape((1, x.shape[1], x.shape[2]))
             # the spatial_degenerated object will be the PSF applied to A or Y 
             # the spatial resolution after do that will be mn due to the 
             # kernel size and stride
-            plt.imshow(band_image_tensor.detach().numpy())
-            plt.show()
-            break
-            spatial_degenerated[:, band] = self.PSFconv(x[:,band])
-        return spatial_degenerated
+            spatial_degenerated.append(self.PSFconv(band_image_tensor).detach().numpy().reshape([x.shape[1], x.shape[2]]))
+        return torch.from_numpy(np.array(spatial_degenerated))
     
     def forward(self, Z, Y):
         # applying encoder
-        '''
-            BUG HERE, I THINK WE NEED IT TO BE M x N x p or l, I MEAN, Ah_a and A are inverted
-        '''
         Ah_a = self.LrHSI_encoder(Z) # abundance (p x m x n)
         print(f'Shape Ah_a {Ah_a.shape}')
         A = self.HrMSI_encoder(Y) # abundance (p x M x N)
@@ -161,7 +150,7 @@ class Model(torch.nn.Module):
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (mn x p)
-        lrMSI_Y = self.PSF(Y) 
+        lrMSI_Y = self.PSF(Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()) 
 
         # applying endmembers
         Za = self.endmembers(Ah_a) # lrHSI (mn x n_spectral)
