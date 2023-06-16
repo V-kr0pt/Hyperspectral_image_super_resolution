@@ -165,7 +165,7 @@ class Model(torch.nn.Module):
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (p x m x n)
-        lrMSI_Y = self.PSF(Y) 
+        lrMSI_Y = self.PSF(Y) # lrMSI (l x m x n)
 
         # applying endmembers
         Za = self.endmembers(Ah_a) # lrHSI (n_spectral x m x n)
@@ -181,29 +181,36 @@ class Model(torch.nn.Module):
     
     
     def loss(self, Z, Y, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v):
+        print("Computing loss")
         # loss function
         loss = nn.L1Loss()
         # reconstruction loss
-        # print(f"Za.shape = {Za.shape}")
-        # print(f"Z.shape = {Z.shape}")
+        print(f"Za.shape = {Za.shape}")
+        print(f"Z.shape = {Z.shape}")
         l1 = loss(Za, Z)
         l2 = loss(Zb, Z)
         l3 = loss(Y_, Y)
         l4 = loss(lrMSI_Y, lrMSI_Z)
         Lbase = l1 + alpha*l2 + beta*l3 + gamma*l4
         # Constraint sum2one loss
-        l1 = loss(A.sum(dim=1), torch.ones(A.shape[0]))
-        l2 = loss(Ah_a.sum(dim=1), torch.ones(Ah_a.shape[0]))
-        l3 = loss(Ah_b.sum(dim=1), torch.ones(Ah_b.shape[0]))
+        l1 = loss(A.sum(dim=0), torch.ones((A.shape[1], A.shape[2])))
+        l2 = loss(Ah_a.sum(dim=0), torch.ones((Ah_a.shape[1], Ah_a.shape[2])))
+        l3 = loss(Ah_b.sum(dim=0), torch.ones((Ah_a.shape[1], Ah_b.shape[2])))
         Lsum2one = l1 + l2 + l3
         # Constraint sparsity loss
-        a = 1e-4 # sparsity parameter
-        Lsparse = 0
+        a = torch.tensor(1e-4, dtype=torch.float) # sparsity parameter
+        target_sparse = a.expand_as(A) 
+        # KL divergence
+        p = F.softmax(A, dim=0)
+        q = F.softmax(target_sparse, dim=0)
+        s1 = torch.sum(p * torch.log(p / q))
+        s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q))) 
+        Lsparse = s1 + s2
         # for each element in A
-        for aij in A:
-            # Kullback-Leibler divergence
-            Lsparse += a*np.log(a/aij) + (1-a)*np.log((1-a)/(1-aij))
-        
+        # for aij in A.detach().numpy():
+        #     # Kullback-Leibler divergence
+        #     Lsparse += a*np.log(a/aij) + (1-a)*np.log((1-a)/(1-aij))
+        # print(type(Lsparse))
         # total loss
         l = Lbase + u * Lsum2one + v * Lsparse
         return l
