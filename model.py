@@ -24,13 +24,16 @@ class Model(torch.nn.Module):
         # call the constructor of the parent class
         super(Model, self).__init__()
 
+        # Number of endmembers
+        self.p = n_endmembers
+
         # HSI parameters
         self.HSI_n_rows = Z.shape[0]
         self.HSI_n_cols = Z.shape[1]
         self.n_spectral = Z.shape[2] # number of spectral bands
         self.HSI_n_pixels = self.HSI_n_rows*self.HSI_n_cols
 
-        # n_spectral = > n_endmembers
+        # n_spectral -> n_endmembers
         
         h_interval_lr = (n_endmembers - self.n_spectral) // 4
         self.h_dim1_lr_encoder = self.n_spectral + h_interval_lr
@@ -48,16 +51,13 @@ class Model(torch.nn.Module):
         self.MSI_n_channels = Y.shape[2] # number of color channels
         self.MSI_n_pixels = self.MSI_n_rows*self.MSI_n_cols
 
+        # MSI_n_channels -> n_endmembers
         h_interval_hr = (self.MSI_n_channels - self.n_spectral) // 4
         self.h_dim1_hr_encoder = self.n_spectral + h_interval_hr
         self.h_dim2_hr_encoder = self.h_dim1_hr_encoder + h_interval_hr
         self.h_dim3_hr_encoder = self.h_dim2_hr_encoder + h_interval_hr
-
-        # Number of endmembers
-        self.p = n_endmembers
         
-        # lr encoder part
-        #self.conv1_lr = nn.Conv2d(self.n_spectral, self.h_dim1_lr_encoder, kernel_size=(1,1))  
+        # lr encoder part 
         self.conv1_lr = nn.Conv2d(self.n_spectral, self.h_dim1_lr_encoder, kernel_size=(1,1))  
         self.conv2_lr = nn.Conv2d(self.h_dim1_lr_encoder, self.h_dim2_lr_encoder, kernel_size=(1,1))  
         self.conv3_lr = nn.Conv2d(self.h_dim2_lr_encoder, self.h_dim3_lr_encoder, kernel_size=(1,1))    
@@ -70,7 +70,7 @@ class Model(torch.nn.Module):
         self.conv4_hr = nn.Conv2d(self.h_dim3_hr_encoder, self.p, kernel_size=(1,1))
 
         # SRF function
-        self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_channels, kernel_size=(1,1), bias=False) # BIAS FALSE?
+        self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_channels, kernel_size=(1,1), bias=False) 
         self.SRFnorm = nn.BatchNorm2d(self.MSI_n_channels, affine=False)
 
         # PSF function
@@ -96,8 +96,7 @@ class Model(torch.nn.Module):
     
     def HrMSI_encoder(self, Y):
         # we reshape Y to be l x M x N, i.e. (C_in, H_in, W_in)
-        h = Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()
-        
+        h = Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()        
         # we apply the convolutional layers
         h = F.leaky_relu(self.conv1_hr(h))
         h = F.leaky_relu(self.conv2_hr(h))
@@ -110,10 +109,10 @@ class Model(torch.nn.Module):
     def endmembers(self, A):
         # we reshape A to be (p x M x N) or (p x m x n) where p is the number of endmembers
         #h = A.view((self.p, -1))
-        # apply the conv layer (matrix multiplication) to obtain Z' (mn x )or X'
+        # apply the conv layer (matrix multiplication) to obtain Z' (mn x L) or X' (MN x L)
         h = self.Econv(A)
         #return h.view((-1, self.n_spectral))           
-        return h # Here we expect h to be (p x M or m x N or n)
+        return h # Here we expect h to be (p x m x n ) or (p x M x N)
     
     def SRF(self, x):
         # here x will be Z (mn x L) or E (p x L)
@@ -132,9 +131,11 @@ class Model(torch.nn.Module):
         '''
         phi_num = phi_num.unsqueeze(0)        
         spectral_degenerated = self.SRFnorm(phi_num) 
+
+        # we remove the singleton dimension (batch_size)
         spectral_degenerated = spectral_degenerated.squeeze(0)
 
-        # apply clamp to ensure that   
+        # apply clamp to ensure that the values are between 0 and 1 
         spectral_degenerated = torch.clamp(spectral_degenerated, min=0, max=1)  
         # we reshape it to the original shape it to (mn x l) if Ylr or (p x l) if Em 
         #return spectral_degenerated.view((-1, self.MSI_n_channels))
@@ -148,8 +149,8 @@ class Model(torch.nn.Module):
         # for each band, p or l
         for band in range(x.shape[0]):
             band_image_tensor = x[band, :, :].reshape((1, x.shape[1], x.shape[2]))
-            # the spatial_degenerated object will be the PSF applied to A or Y 
-            # the spatial resolution after do that will be mn due to the 
+            # the spatial_degenerated cube will be the PSF applied to A or Y 
+            # the spatial resolution after do that will be (m x n) due to the 
             # kernel size and stride
             spatial_degenerated.append(self.PSFconv(band_image_tensor).detach().numpy().reshape([x.shape[1], x.shape[2]]))
         return torch.from_numpy(np.array(spatial_degenerated))
