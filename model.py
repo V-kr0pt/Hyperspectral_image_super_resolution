@@ -108,11 +108,12 @@ class Model(torch.nn.Module):
         return A
     
     def endmembers(self, A):
-        # we reshape A to be (p x MN) or (p x mn) where p is the number of endmembers
-        h = A.view((self.p, -1))
+        # we reshape A to be (p x M x N) or (p x m x n) where p is the number of endmembers
+        #h = A.view((self.p, -1))
         # apply the conv layer (matrix multiplication) to obtain Z' (mn x )or X'
         h = self.Econv(A)
-        return h.view((-1, self.n_spectral))           
+        #return h.view((-1, self.n_spectral))           
+        return h # Here we expect h to be (p x M or m x N or n)
     
     def SRF(self, x):
         # here x will be Z (mn x L) or E (p x L)
@@ -149,13 +150,16 @@ class Model(torch.nn.Module):
         print(f'Shape A {A.shape}')
 
         # applying PSF
-        Ah_b = self.PSF(A) # abundance (mn x p)
+        Ah_b = self.PSF(A) # abundance (p x m x n)
         lrMSI_Y = self.PSF(Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()) 
 
         # applying endmembers
         Za = self.endmembers(Ah_a) # lrHSI (mn x n_spectral)
+        print(Za.shape)
         Zb = self.endmembers(Ah_b) # lrHSI (mn x n_spectral)
+        print(Zb.shape)
         X_ = self.endmembers(A)  # hrHSI (MN x n_spectral)
+        print(X_.shape)
 
         # applying SRF
         Y_ = self.SRF(X_) # hrMSI (MN x n_spectral)
