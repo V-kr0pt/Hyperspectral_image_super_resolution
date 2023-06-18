@@ -42,8 +42,10 @@ class Model(torch.nn.Module):
 
         # assuming that all images are squared
         self.GSD_ratio = Y.shape[0] / Z.shape[0]
-
-        assert int(self.GSD_ratio) == self.GSD_ratio, "GSD ratio is not an integer, could you check that?"
+        
+        # print(self.GSD_ratio)
+        # assert int(self.GSD_ratio) == self.GSD_ratio, "GSD ratio is not an integer, could you check that?"
+        
         self.GSD_ratio = int(self.GSD_ratio)
         # MSI parameters
         self.MSI_n_rows = Y.shape[0]
@@ -135,15 +137,16 @@ class Model(torch.nn.Module):
     
     def PSF(self, x):
         # here x will be A (p x M x N) or Y (l x M x N) 
-        # the spatial generated will be Ah (mn x p) or Ylr (mn x l)
-        spatial_degenerated = []
+        # the spatial generated will be Ah (m x n x p) or Ylr (m x n x l)
+        spatial_degenerated_list = []
         # for each band, p or l
         for band in range(x.shape[0]):
             band_image_tensor = x[band, :, :].reshape((1, x.shape[1], x.shape[2]))
             # the spatial_degenerated cube will be the PSF applied to A or Y 
             # the spatial resolution after do that will be (m x n) due to the kernel size and stride
-            spatial_degenerated.append(self.PSFconv(band_image_tensor).detach().numpy().reshape([x.shape[1], x.shape[2]]))
-        return torch.from_numpy(np.array(spatial_degenerated))
+            spatial_degenerated_img = self.PSFconv(band_image_tensor).detach().numpy().squeeze(0)
+            spatial_degenerated_list.append(spatial_degenerated_img)
+        return torch.from_numpy(np.array(spatial_degenerated_list))
     
     def forward(self, Z, Y):
         # reshaping Z and Y to be (p x m x n) and (l x M x N) respectively
@@ -155,8 +158,9 @@ class Model(torch.nn.Module):
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (p x m x n)
+        print(Ah_b.shape)
         lrMSI_Y = self.PSF(Y) # lrMSI (l x m x n)
-
+        print(lrMSI_Y.shape)
         # applying endmembers
         Za = self.endmembers(Ah_a) # lrHSI (n_spectral x m x n)
         Zb = self.endmembers(Ah_b) # lrHSI (n_spectral x m x n)

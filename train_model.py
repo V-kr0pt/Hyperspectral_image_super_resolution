@@ -1,19 +1,30 @@
 import model
+import preprocessing
 import scipy.io as sci
 import torch.optim as optim
 import torch
 
 
 def main():
-    # Get data
-    path = './Datasets/flowers/'
-    data = sci.loadmat(path + 'flowers.mat')
-    data = torch.from_numpy(data[list(data.keys())[-1]])
-    data_rgb = sci.loadmat(path + 'flowers_rgb.mat')
-    data_rgb = torch.from_numpy(data_rgb[list(data_rgb.keys())[-1]])
+    # Obtaining the high resolution HSI data (X)
+    path = './Datasets/IndianPines/'
+    data = sci.loadmat(path + 'Indian_pines_corrected.mat')
+    hrHSI = data[list(data.keys())[-1]]
 
+    # X will be the Tensor of high resolution HSI data 
+    X = torch.from_numpy(hrHSI.astype(int))
+    
+    # Creating the low resolution HSI (Z) and high resolution MSI (Y)
+    Images_Generator = preprocessing.Dataset(hrHSI)
+    lrHSI = Images_Generator.img_lr
+    hrMSI = Images_Generator.img_msi
+
+    # Transforming the data into Tensors
+    Z = torch.from_numpy(lrHSI.astype(int))
+    Y = torch.from_numpy(hrMSI.astype(int))
+    
     # Instance model object
-    CCNN = model.Model(data, data_rgb, n_endmembers=100)
+    CCNN = model.Model(Z, Y, n_endmembers=100)
     # Create optimizer
     optimizer = optim.Adam(CCNN.parameters(), lr=0.001)
 
@@ -28,7 +39,7 @@ def main():
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
     num_epochs = 1
 
-    train(CCNN, optimizer, data, data_rgb, alpha, beta, gamma, u, v, num_epochs)
+    train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs)
 
 
 # Create loss loop
@@ -44,7 +55,7 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
         optimizer.zero_grad()  # Clear gradients
         # Forward pass
         X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = model_.forward(Z_train, Y_train)  
- 
+
         # Compute the loss
         loss = model_.loss(Z_train, Y_train, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v)
 
