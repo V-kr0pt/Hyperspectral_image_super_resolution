@@ -1,8 +1,8 @@
 import model
 import preprocessing
 import scipy.io as sci
-import torch.optim as optim
 import torch
+import torch.optim as optim
 
 
 def main():
@@ -26,7 +26,10 @@ def main():
     # Instance model object
     CCNN = model.Model(Z, Y, n_endmembers=100)
     # Create optimizer
-    optimizer = optim.Adam(CCNN.parameters(), lr=0.001)
+    optimizer = optim.Adam(CCNN.parameters(), 
+                           betas = (0.9, 0.999),
+                           eps = 1e-08,
+                           lr=0.01)
 
     # Define hyperparameters
 
@@ -45,7 +48,10 @@ def main():
 # Create loss loop
 
 def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs):
-
+    
+    # Create scheduler to implement the learning rate decay
+    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=.5, end_factor=0, total_iters=10000)
+    
     # reshape the data, always the channels first
     Z_train = Z_train.permute(2, 0, 1) 
     Y_train = Y_train.permute(2, 0, 1)
@@ -62,9 +68,10 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
         # Backward pass
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         # Print the loss for every epoch
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}, last_lr: {scheduler.get_last_lr()}")
 
     print("Training finished!")
 
