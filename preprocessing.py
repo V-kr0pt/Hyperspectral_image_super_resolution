@@ -6,17 +6,18 @@ import scipy.io as io
 import numpy as np
 
 class Dataset(data.Dataset):
-    def __init__(self, args, sp_matrix, isTrain=True):
+    def __init__(self, img, isTrain=True):
         super(Dataset, self).__init__()
 
-        self.args = args
-        self.sp_matrix = sp_matrix
-        self.msi_channels = sp_matrix.shape[1]
-
+        #self.args = args
+        #self.sp_matrix = sp_matrix
+        #self.msi_channels = sp_matrix.shape[1]
+        
+        self.img = img
         self.isTrain = isTrain
 
         default_datapath = os.getcwd()
-        data_folder = os.path.join(default_datapath, args.data_name)
+        """data_folder = os.path.join(default_datapath, args.data_name)
         if os.path.exists(data_folder):
             for root, dirs, files in os.walk(data_folder):
                 if args.mat_name in files:
@@ -25,37 +26,39 @@ class Dataset(data.Dataset):
                     data_path = os.path.join(data_folder, args.mat_name+'.mat')
         else:
             return 0
-
-        self.imgpath_list = sorted(glob.glob(data_path))
-        self.img_list = []
+        
+        #self.imgpath_list = sorted(glob.glob(data_path))
+        #self.img_list = []
         for i in range(len(self.imgpath_list)):
             self.img_list.append(io.loadmat(self.imgpath_list[i])['img'])
 
         'for single HSI'
-        (_, _, self.hsi_channels) = self.img_list[0].shape
+        (_, _, self.hsi_channels) = img.shape
 
         'generate simulated data'
         self.img_patch_list = []
         self.img_lr_list = []
         self.img_msi_list = []
         for i, img in enumerate(self.img_list):
-            (h, w, c) = img.shape
-            s = self.args.scale_factor
-            'Ensure that the side length can be divisible'
-            r_h, r_w = h%s, w%s
-            img_patch = img[int(r_h/2):h-(r_h-int(r_h/2)),int(r_w/2):w-(r_w-int(r_w/2)),:]
-            self.img_patch_list.append(img_patch)
+        """ 
+        (h, w, c) = self.img.shape
+        s = 4 #scale_factor See table 1 page 6 in the article
+        self.sigma = 0.5 #See Section B in the article
+        'Ensure that the side length can be divisible'
+        r_h, r_w = h%s, w%s
+        #img_patch = self.img[int(r_h/2):h-(r_h-int(r_h/2)),int(r_w/2):w-(r_w-int(r_w/2)),:]
+        #self.img_patch_list.append(img_patch)
 
-            'LrHSI'
-            img_lr = self.generate_LrHSI(img_patch, s)
-            self.img_lr_list.append(img_lr)
-            (self.lrhsi_height, self.lrhsi_width, _) = img_lr.shape
+        'LrHSI'
+        self.img_lr = self.generate_LrHSI(s)
+        #self.img_lr_list.append(img_lr)
+        (self.lrhsi_height, self.lrhsi_width, _) = self.img_lr.shape
 
-            'HrMSI'
-            img_msi = self.generate_HrMSI(img_patch, self.sp_matrix)
-            self.img_msi_list.append(img_msi)
+        'HrMSI'
+        self.img_msi = self.generate_HrMSI()
+        #self.img_msi_list.append(img_msi)
 
-    def downsamplePSF(self, img, sigma, stride):
+    def downsamplePSF(self, stride=1, sigma=0.5):
         def matlab_style_gauss2D(shape=(3,3), sigma=0.5):
             m,n = [(ss-1.)/2. for ss in shape]
             y,x = np.ogrid[-m:m+1,-n:n+1]
@@ -67,23 +70,25 @@ class Dataset(data.Dataset):
             return h
         # generate filter same with fspecial('gaussian') function
         h = matlab_style_gauss2D((stride,stride),sigma)
-        if img.ndim == 3:
-            img_w,img_h,img_c = img.shape
-        elif img.ndim == 2:
+        if self.img.ndim == 3:
+            img_w,img_h,img_c = self.img.shape
+        elif self.img.ndim == 2:
             img_c = 1
-            img_w,img_h = img.shape
-            img = img.reshape((img_w,img_h,1))
+            img_w,img_h = self.img.shape
+            self.img = self.img.reshape((img_w,img_h,1))
         from scipy import signal
         out_img = np.zeros((img_w//stride, img_h//stride, img_c))
         for i in range(img_c):
-            out = signal.convolve2d(img[:,:,i],h,'valid')
+            out = signal.convolve2d(self.img[:,:,i],h,'valid')
             out_img[:,:,i] = out[::stride,::stride]
         return out_img
 
-    def generate_LrHSI(self, img, scale_factor):
-        img_lr = self.downsamplePSF(img, sigma=self.args.sigma, stride=scale_factor)
+    def generate_LrHSI(self, scale_factor):
+        img_lr = self.downsamplePSF(sigma=self.sigma, stride=scale_factor)
         return img_lr
 
+    
+    """
     def generate_HrMSI(self, img, sp_matrix):
         (h, w, c) = img.shape
         self.msi_channels = sp_matrix.shape[1]
@@ -92,8 +97,43 @@ class Dataset(data.Dataset):
         else:
             raise Exception("The shape of sp matrix does not match the image")
         return img_msi
+    """
 
-    def __getitem__(self, index):
+    def generate_HrMSI(self):
+        srf_bands = {
+        'blue': {'center': 0.45, 'fwhm': 0.06},
+        'green': {'center': 0.53, 'fwhm': 0.06},
+        'red': {'center': 0.66, 'fwhm': 0.03},
+        'nir': {'center': 0.86, 'fwhm': 0.03},
+        'swir1': {'center': 1.61, 'fwhm': 0.08},
+        'swir2': {'center': 2.20, 'fwhm': 0.18}
+        }
+        num_bands_msi = len(srf_bands)
+        msi_data = np.zeros((self.img.shape[0], self.img.shape[1], num_bands_msi))
+
+        for i, band in enumerate(srf_bands):
+            center_wavelength = srf_bands[band]['center']
+            fwhm = srf_bands[band]['fwhm']
+
+            # Calculate the start and end wavelengths based on the SRF
+            start_wavelength = center_wavelength - (fwhm / 2)
+            end_wavelength = center_wavelength + (fwhm / 2)
+            
+            num_channels = 200
+            start_wavelength = 0.4
+            end_wavelength = 2.5
+
+            hsi_wavelengths = np.linspace(start_wavelength, end_wavelength, num_channels)
+
+            # Find the corresponding bands in HSI within the specified wavelength range
+            start_band = np.argmax(hsi_wavelengths >= start_wavelength)
+            end_band = np.argmax(hsi_wavelengths > end_wavelength)
+
+            # Compute the average of HSI bands within the specified range
+            msi_data[..., i] = np.mean(self.img[..., start_band:end_band+1], axis=-1)
+        return msi_data
+
+    """def __getitem__(self):
         img_patch = self.img_patch_list[index]
         img_lr = self.img_lr_list[index]
         img_msi = self.img_msi_list[index]
@@ -105,6 +145,6 @@ class Dataset(data.Dataset):
                 'hmsi':img_tensor_rgb,
                 "hhsi":img_tensor_hr,
                 "name":img_name}
-
+    """
     def __len__(self):
         return len(self.imgpath_list)
