@@ -1,3 +1,4 @@
+import os
 import model
 import preprocessing
 import scipy.io as sci
@@ -6,6 +7,12 @@ import torch.optim as optim
 
 
 def main():
+    # Ask the user for the model name
+    model_name = input("Input the model name: ")
+    if model_name == '':
+        model_name = 'model' 
+    model_name = model_name + '.pth'
+
     # Obtaining the high resolution HSI data (X)
     path = './Datasets/IndianPines/'
     data = sci.loadmat(path + 'Indian_pines_corrected.mat')
@@ -42,12 +49,12 @@ def main():
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
     num_epochs = 1
 
-    train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs)
+    train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, model_name)
 
 
 # Create loss loop
 
-def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs):
+def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs, model_name='model.pth'):
     
     # Create scheduler to implement the learning rate decay
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=.5, end_factor=0, total_iters=10000)
@@ -75,7 +82,14 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
 
     print("Training finished!")
 
-
+    # creating folder to save the model 
+    path_model = './Models/'
+    # if Model_checkpoint folder does not exist, create it
+    if not os.path.exists(path_model):
+        os.makedirs(path_model)
+    # saving the model
+    torch.save(model_.state_dict(), path_model + model_name)
+    print(model_name + " saved!")
 
 if __name__ == '__main__':
     main()
