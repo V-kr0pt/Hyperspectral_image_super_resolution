@@ -12,8 +12,8 @@
 - [x] Do a forward pass to see the details about the dimensions of the layers
 - [x] Create Train loop
 - [x] Put linear decay in the learning rate
-- [x] Save the model after training
 - [ ] Create a prediction.py 
+- [x] Save the model after training
 - [ ] Error metrics (RGB RMSE, MRAE, SAM, mSAM, mPSNR, ERGAS)
 - [ ] Remove clamp from the model definition and put it in the training loop (E, PSF and SNF)
 - [ ] Put clamp in E, PSF and SNF in the training loop

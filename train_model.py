@@ -47,7 +47,7 @@ def main():
     u = 0.001
     v = 0.001
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
-    num_epochs = 1
+    num_epochs = 10000
 
     train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, model_name)
 
