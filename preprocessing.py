@@ -4,6 +4,7 @@ import os
 import glob
 import scipy.io as io
 import numpy as np
+from scipy import signal
 
 class Dataset(data.Dataset):
     def __init__(self, img, isTrain=True):
@@ -13,20 +14,20 @@ class Dataset(data.Dataset):
         self.isTrain = isTrain
 
         (h, w, c) = self.img.shape
-        s = 4 #scale_factor See table 1 page 6 in the article
-        self.sigma = 0.5 #See Section B in the article
+        #self.scale_factor = 2 #scale_factor See table 1 page 6 in the article
+        #self.sigma = 0.5 #See Section B in the article
         'Ensure that the side length can be divisible'
-        r_h, r_w = h%s, w%s
+        #r_h, r_w = h%self.scale_factor, w%self.scale_factor
 
         'LrHSI'
-        self.img_lr = self.generate_LrHSI(s)
+        self.img_lr = self.generate_LrHSI()
         (self.lrhsi_height, self.lrhsi_width, _) = self.img_lr.shape
 
         'HrMSI'
         self.img_msi = self.generate_HrMSI()
 
-    def downsamplePSF(self, stride=1, sigma=0.5):
-        def matlab_style_gauss2D(shape=(3,3), sigma=0.5):
+    def downsamplePSF(self, scale_factor, sigma):
+        def matlab_style_gauss2D(shape=(scale_factor,scale_factor), sigma=sigma):
             m,n = [(ss-1.)/2. for ss in shape]
             y,x = np.ogrid[-m:m+1,-n:n+1]
             h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
@@ -36,22 +37,22 @@ class Dataset(data.Dataset):
                 h /= sumh
             return h
         # generate filter same with fspecial('gaussian') function
-        h = matlab_style_gauss2D((stride,stride),sigma)
+        h = matlab_style_gauss2D((scale_factor,scale_factor),sigma)
         if self.img.ndim == 3:
             img_w,img_h,img_c = self.img.shape
         elif self.img.ndim == 2:
             img_c = 1
             img_w,img_h = self.img.shape
             self.img = self.img.reshape((img_w,img_h,1))
-        from scipy import signal
-        out_img = np.zeros((img_w//stride, img_h//stride, img_c))
+        
+        out_img = np.zeros((img_w//scale_factor, img_h//scale_factor, img_c))
         for i in range(img_c):
             out = signal.convolve2d(self.img[:,:,i],h,'valid')
-            out_img[:,:,i] = out[::stride,::stride]
+            out_img[:,:,i] = out[::scale_factor,::scale_factor]
         return out_img
 
-    def generate_LrHSI(self, scale_factor):
-        img_lr = self.downsamplePSF(sigma=self.sigma, stride=scale_factor)
+    def generate_LrHSI(self, scale_factor=2, sigma=0.5):
+        img_lr = self.downsamplePSF(scale_factor, sigma)
         return img_lr
 
 
@@ -76,10 +77,10 @@ class Dataset(data.Dataset):
             end_wavelength = center_wavelength + (fwhm / 2)
             
             num_channels = 200
-            start_wavelength = 0.4
-            end_wavelength = 2.5
+            start_wavelength_hsi = 0.4
+            end_wavelength_hsi = 2.5
 
-            hsi_wavelengths = np.linspace(start_wavelength, end_wavelength, num_channels)
+            hsi_wavelengths = np.linspace(start_wavelength_hsi, end_wavelength_hsi, num_channels)
 
             # Find the corresponding bands in HSI within the specified wavelength range
             start_band = np.argmax(hsi_wavelengths >= start_wavelength)
@@ -91,3 +92,14 @@ class Dataset(data.Dataset):
 
     def __len__(self):
         return len(self.imgpath_list)
+
+
+if __name__ == "__main__":
+    indian_pines_path = './Datasets/IndianPines/'
+    import scipy.io as sci
+    data = sci.loadmat(indian_pines_path + 'Indian_pines_corrected.mat')
+    X = data['indian_pines_corrected']
+    Images_Generator = Dataset(X)
+    HrMSI = Images_Generator.img_msi
+    print(HrMSI)
+    print(HrMSI[...,0]==HrMSI[...,2])
