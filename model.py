@@ -40,13 +40,6 @@ class Model(torch.nn.Module):
         self.h_dim2_lr_encoder = self.h_dim1_lr_encoder + h_interval_lr
         self.h_dim3_lr_encoder = self.h_dim2_lr_encoder + h_interval_lr
 
-        # assuming that all images are squared
-        self.GSD_ratio = Y.shape[0] / Z.shape[0]
-        
-        # print(self.GSD_ratio)
-        # assert int(self.GSD_ratio) == self.GSD_ratio, "GSD ratio is not an integer, could you check that?"
-        
-        self.GSD_ratio = int(self.GSD_ratio)
         # MSI parameters
         self.MSI_n_rows = Y.shape[0]
         self.MSI_n_cols = Y.shape[1]
@@ -74,6 +67,9 @@ class Model(torch.nn.Module):
         # SRF function
         self.SRFconv = nn.Conv2d(self.n_spectral, self.MSI_n_channels, kernel_size=(1,1), bias=False) 
         self.SRFnorm = nn.BatchNorm2d(self.MSI_n_channels, affine=False)
+
+        # Ground Sampling Distance (GSD) ratio between LrHSI and HrMSI
+        self.GSD_ratio = self.MSI_n_rows // self.HSI_n_rows
 
         # PSF function
         # kernel size is the ratio of the GSDs between the Z and Y
@@ -158,9 +154,8 @@ class Model(torch.nn.Module):
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (p x m x n)
-        print(Ah_b.shape)
         lrMSI_Y = self.PSF(Y) # lrMSI (l x m x n)
-        print(lrMSI_Y.shape)
+        
         # applying endmembers
         Za = self.endmembers(Ah_a) # lrHSI (n_spectral x m x n)
         Zb = self.endmembers(Ah_b) # lrHSI (n_spectral x m x n)
