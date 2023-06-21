@@ -1,5 +1,6 @@
 import os
 import model
+from datatime import datetime 
 import preprocessing
 import scipy.io as sci
 import torch
@@ -10,7 +11,13 @@ def main():
     # Ask the user for the model name
     model_name = input("Input the model name: ")
     if model_name == '':
-        model_name = 'model' 
+        current_datetime = datetime.now()
+        year = current_datetime.year
+        month = current_datetime.month
+        day = current_datetime.day
+        hour = current_datetime.hour
+        minute = current_datetime.minute
+        model_name = f'model_{year}-{month}-{day}-{hour}-{minute}' 
     model_name = model_name + '.pth'
 
     # Obtaining the high resolution HSI data (X)
