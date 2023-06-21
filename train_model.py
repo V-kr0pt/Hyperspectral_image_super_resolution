@@ -1,6 +1,6 @@
 import os
 import model
-from datatime import datetime 
+from datetime import datetime 
 import preprocessing
 import scipy.io as sci
 import torch
