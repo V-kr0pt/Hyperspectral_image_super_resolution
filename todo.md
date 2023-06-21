@@ -14,6 +14,7 @@
 - [x] Put linear decay in the learning rate
 - [x] Create a prediction.py 
 - [x] Save the model after training
+- [ ] Create a log file to save the training information
 - [ ] Error metrics (RGB RMSE, MRAE, SAM, mSAM, mPSNR, ERGAS)
 - [ ] Create hyphotesis about why the training is not working
 
