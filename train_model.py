@@ -5,7 +5,7 @@ import preprocessing
 import scipy.io as sci
 import torch
 import torch.optim as optim
-
+import numpy as np
 
 def main():
     # Ask the user for the model name
@@ -32,7 +32,14 @@ def main():
     Images_Generator = preprocessing.Dataset(hrHSI)
     lrHSI = Images_Generator.img_lr
     hrMSI = Images_Generator.img_msi
-
+  
+    # normalize lrHSI and hrMSI
+    lrHSI = (lrHSI - lrHSI.min()) / (lrHSI.max() - lrHSI.min())
+    hrMSI = (hrMSI - hrMSI.min()) / (hrMSI.max() - hrMSI.min())
+    
+    # lrHSI = normalize(lrHSI)
+    # hrMSI = normalize(hrMSI)
+    
     # Transforming the data into Tensors
     Z = torch.from_numpy(lrHSI.astype(int))
     Y = torch.from_numpy(hrMSI.astype(int))
@@ -58,6 +65,11 @@ def main():
 
     train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, model_name)
 
+def normalize(input, axis=2):
+    sum = np.sum(input, axis=axis, keepdims=True)
+    output = input / sum
+    return output
+
 
 # Create loss loop
 
@@ -82,6 +94,16 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
         # Backward pass
         loss.backward()
         optimizer.step()
+        
+        with torch.no_grad():
+            for p in model_.Econv.parameters():
+                p.clamp_(0, 1)
+            for p in model_.PSFconv.parameters():
+                p.clamp_(0, 1)
+            for p in model_.SRFconv.parameters():
+                p.clamp_(0, 1)
+                
+        
         scheduler.step()
 
         # Print the loss for every epoch

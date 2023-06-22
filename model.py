@@ -4,6 +4,9 @@ import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import sys
+
+np.set_printoptions(threshold=sys.maxsize)
 
 # defining the model class, inheriting from nn.Module
 class Model(torch.nn.Module):
@@ -79,6 +82,12 @@ class Model(torch.nn.Module):
         # Endmembers Layer 
         self.Econv = nn.Conv2d(self.p, self.n_spectral, kernel_size=(1,1), bias=False)
 
+    def normalize_tensor(self, input, dim=0):
+        sum = torch.sum(input, dim=dim, keepdim=True)
+        output = input / sum
+        return output
+
+    
     def LrHSI_encoder(self, Z):
         #  we reshape Z to be L x m x n, i.e. (C_in, H_in, W_in)
         h = Z 
@@ -87,8 +96,20 @@ class Model(torch.nn.Module):
         h = F.leaky_relu(self.conv2_lr(h))
         h = F.leaky_relu(self.conv3_lr(h))
         Ah = self.conv4_lr(h) 
+        # np.savetxt("Ah.txt", Ah.detach().numpy()[0,:,:], fmt='%d')
+        
+        # print("Ah =", Ah.detach().numpy()[25].max(), Ah.detach().numpy()[25].min())
+        
         # apply clamp to A to ensure that the abundance values are between 0 and 1
+        # Ah = torch.stack([torch.clamp(Ah[i], min=0, max=1) for i in range(Ah.shape[0])])
+        
         Ah = torch.clamp(Ah, min=0, max=1)
+        # Ah = self.normalize_tensor(Ah, dim=0)
+        
+        print("Bands =", Ah.detach().numpy()[:,36,36].sum())
+        # print("Ah =", Ah.detach().numpy().shape)
+        # np.savetxt("Ahclamped.txt", Ah.detach().numpy()[0,:,:], fmt='%d')
+        # print("saved")
         return Ah
     
     def HrMSI_encoder(self, Y):
@@ -100,7 +121,10 @@ class Model(torch.nn.Module):
         h = F.leaky_relu(self.conv3_hr(h))
         A = self.conv4_hr(h) 
         # apply clamp to A
+        # A = torch.stack([torch.clamp(A[i], min=0, max=1) for i in range(A.shape[0])])
         A = torch.clamp(A, min=0, max=1)
+        # A = self.normalize_tensor(A, dim=0)
+        print("A =", A.detach().numpy()[:, 36, 36].sum())
         return A
     
     def endmembers(self, A):
@@ -127,7 +151,7 @@ class Model(torch.nn.Module):
         spectral_degenerated = spectral_degenerated.squeeze(0)
 
         # apply clamp to ensure that the values are between 0 and 1 
-        spectral_degenerated = torch.clamp(spectral_degenerated, min=0, max=1)  
+        # spectral_degenerated = torch.clamp(spectral_degenerated, min=0, max=1)  
 
         return spectral_degenerated
     
@@ -144,6 +168,30 @@ class Model(torch.nn.Module):
             spatial_degenerated_list.append(spatial_degenerated_img)
         return torch.from_numpy(np.array(spatial_degenerated_list))
     
+    # def first_forward(self, Z, Y):
+    #     # reshaping Z and Y to be (p x m x n) and (l x M x N) respectively
+    #     Z = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
+    #     Y = Y.reshape((self.MSI_n_channels, self.MSI_n_rows, self.MSI_n_cols)).float()
+    #     # applying encoder
+    #     Ah_a = self.LrHSI_encoder(Z) # abundance (p x m x n)
+    #     A = self.HrMSI_encoder(Y) # abundance (p x M x N)
+
+    #     # applying PSF
+    #     Ah_b = self.PSF(A) # abundance (p x m x n)
+    #     lrMSI_Y = self.PSF(Y) # lrMSI (l x m x n)
+        
+    #     # applying endmembers
+    #     Za = self.endmembers(Ah_a) # lrHSI (n_spectral x m x n)
+    #     Zb = self.endmembers(Ah_b) # lrHSI (n_spectral x m x n)
+    #     X_ = self.endmembers(A)  # hrHSI (n_spectral x m x n)
+
+    #     # applying SRF
+    #     Y_ = self.SRF(X_) # hrMSI 
+
+    #     lrMSI_Z = self.SRF(Z)
+    #     return X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y
+    
+    
     def forward(self, Z, Y):
         # reshaping Z and Y to be (p x m x n) and (l x M x N) respectively
         Z = Z.reshape((self.n_spectral, self.HSI_n_rows, self.HSI_n_cols)).float()
@@ -154,6 +202,7 @@ class Model(torch.nn.Module):
 
         # applying PSF
         Ah_b = self.PSF(A) # abundance (p x m x n)
+        # print("Ah_b =", Ah_b.detach().numpy()[:, 36, 36].sum())
         lrMSI_Y = self.PSF(Y) # lrMSI (l x m x n)
         
         # applying endmembers
@@ -178,12 +227,20 @@ class Model(torch.nn.Module):
         l3 = loss(Y_, Y)
         l4 = loss(lrMSI_Y, lrMSI_Z)
         Lbase = l1 + alpha*l2 + beta*l3 + gamma*l4
-
+        
         # Constraint sum2one loss
         l1 = loss(A.sum(dim=0), torch.ones((A.shape[1], A.shape[2])))
+        # print("l1 =",l1.detach().numpy())
+        # print("A.shape =",A.shape)
         l2 = loss(Ah_a.sum(dim=0), torch.ones((Ah_a.shape[1], Ah_a.shape[2])))
+        # print("l2 =",l2.detach().numpy())
+        # print("Ah_a.shape =",Ah_a.shape)
+        # print("Ah_a_sum =",Ah_a.sum(dim=0))
         l3 = loss(Ah_b.sum(dim=0), torch.ones((Ah_a.shape[1], Ah_b.shape[2])))
+        # print("Ah_b.shape =",Ah_b.shape)
+        # print("l3 =",l3.detach().numpy())
         Lsum2one = l1 + l2 + l3
+        # print("Lsum2one =",Lsum2one.detach().numpy())
 
         # Constraint sparsity loss
         a = torch.tensor(1e-4, dtype=torch.float) # sparsity parameter
