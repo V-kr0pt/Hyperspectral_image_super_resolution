@@ -83,6 +83,10 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
     Z_train = Z_train.permute(2, 0, 1) 
     Y_train = Y_train.permute(2, 0, 1)
 
+    #normalize the data
+    Z_train = (Z_train - torch.min(Z_train)) / (torch.max(Z_train) - torch.min(Z_train)) 
+    Y_train = (Y_train - torch.min(Y_train)) / (torch.max(Y_train) - torch.min(Y_train))
+
     # Training loop 
     for epoch in range(num_epochs):
         optimizer.zero_grad()  # Clear gradients
