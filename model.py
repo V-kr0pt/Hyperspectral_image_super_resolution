@@ -106,7 +106,7 @@ class Model(torch.nn.Module):
         Ah = torch.clamp(Ah, min=0, max=1)
         # Ah = self.normalize_tensor(Ah, dim=0)
         
-        print("Bands =", Ah.detach().numpy()[:,36,36].sum())
+        # print("Bands =", Ah.detach().numpy()[:,36,36].sum())
         # print("Ah =", Ah.detach().numpy().shape)
         # np.savetxt("Ahclamped.txt", Ah.detach().numpy()[0,:,:], fmt='%d')
         # print("saved")
@@ -124,7 +124,7 @@ class Model(torch.nn.Module):
         # A = torch.stack([torch.clamp(A[i], min=0, max=1) for i in range(A.shape[0])])
         A = torch.clamp(A, min=0, max=1)
         # A = self.normalize_tensor(A, dim=0)
-        print("A =", A.detach().numpy()[:, 36, 36].sum())
+        # print("A =", A.detach().numpy()[:, 36, 36].sum())
         return A
     
     def endmembers(self, A):
@@ -246,10 +246,10 @@ class Model(torch.nn.Module):
         a = torch.tensor(1e-4, dtype=torch.float) # sparsity parameter
         target_sparse = a.expand_as(A) 
         # KL divergence
-        p = F.softmax(A, dim=0)
-        q = F.softmax(target_sparse, dim=0)
-        s1 = torch.sum(p * torch.log(p / q))
-        s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q))) 
+        aij = F.softmax(A, dim=0)
+        a = F.softmax(target_sparse, dim=0)
+        s1 = torch.sum(a * torch.log(a / aij))
+        s2 = torch.sum((1 - a) * torch.log((1 - a) / (1 - aij)))
         Lsparse = s1 + s2
 
         # total loss
