@@ -1,14 +1,9 @@
 import torch
 import torch.nn as nn
-<<<<<<< HEAD
-import torch.nn.functional as F
-import torch.optim as optim
-=======
 import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
->>>>>>> main
 
 # defining the model class, inheriting from nn.Module
 class Model(torch.nn.Module):
