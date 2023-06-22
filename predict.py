@@ -31,6 +31,12 @@ model_path = './Models/'
 model_name = 'model_HrMSI_corrected.pth'
 CCNN.load_state_dict(torch.load(model_path + model_name))
 
+# reshape the data, always the channels first
+Z = Z.permute(2, 0, 1) 
+Y = Y.permute(2, 0, 1)
+Z = (Z - torch.min(Z)) / (torch.max(Z) - torch.min(Z)) 
+Y = (Y - torch.min(Y)) / (torch.max(Y) - torch.min(Y))
+
 # Do a forward pass
 X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = CCNN.forward(Z, Y)  
 
