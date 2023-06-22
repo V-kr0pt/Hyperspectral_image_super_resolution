@@ -50,6 +50,9 @@ ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
 
 plt.show()
 
+fig_path = './Results/'
+plt.savefig(fig_path + model_name[:-4] + '.png')
+
 # Quantitative evaluation
 # Calculate the mean spectral angle mapper (mSAM) 
 # mSAM = torch.mean(torch.acos(torch.sum(X * X_, dim=0) / (torch.norm(X, dim=0) * torch.norm(X_, dim=0))))
