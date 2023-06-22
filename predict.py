@@ -22,7 +22,7 @@ hrMSI = Images_Generator.img_msi
 # Transforming the data into Tensors
 Z = torch.from_numpy(lrHSI.astype(int))
 Y = torch.from_numpy(hrMSI.astype(int))
-    
+
 # create the model object
 CCNN = model.Model(Z, Y, n_endmembers=100)
 
@@ -31,9 +31,12 @@ model_path = './Models/'
 model_name = 'model_HrMSI_corrected.pth'
 CCNN.load_state_dict(torch.load(model_path + model_name))
 
-# reshape the data, always the channels first
+# permuting the data to have the channels first
+X = X.permute(2, 0, 1)
 Z = Z.permute(2, 0, 1) 
 Y = Y.permute(2, 0, 1)
+
+# normalizing the data
 Z = (Z - torch.min(Z)) / (torch.max(Z) - torch.min(Z)) 
 Y = (Y - torch.min(Y)) / (torch.max(Y) - torch.min(Y))
 
@@ -41,23 +44,26 @@ Y = (Y - torch.min(Y)) / (torch.max(Y) - torch.min(Y))
 X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = CCNN.forward(Z, Y)  
 
 # Visualize the results
-fig, ax = plt.subplots(3, 2 , figsize=(25, 25))
+fig, ax = plt.subplots(3, 2)
 
-ax[0, 0].imshow(X.detach().numpy()[:, :, 1])
+ax[0, 0].imshow(X.detach().numpy()[1, :, :])
 ax[0, 0].set_title('High resolution HSI')
+
 ax[0, 1].imshow(X_.detach().numpy()[1, :, :])
 ax[0, 1].set_title('Predicted')
-ax[1, 0].imshow(Y.detach().numpy()[:, :, 1])
+
+ax[1, 0].imshow(Y.detach().numpy()[1, :, :])
 ax[1, 0].set_title('High resolution MSI')
 ax[1, 1].imshow(Y_.detach().numpy()[1, :, :])
-ax[2, 0].imshow(Z.detach().numpy()[:, :, 1])
+
+ax[2, 0].imshow(Z.detach().numpy()[1, :, :])
 ax[2, 0].set_title('Low resolution HSI')
 ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
 
 plt.show()
 
 fig_path = './Results/'
-plt.savefig(fig_path + model_name[:-4] + '.png')
+# plt.savefig(fig_path + model_name[:-4] + '.png')
 
 # Quantitative evaluation
 # Calculate the mean spectral angle mapper (mSAM) 
