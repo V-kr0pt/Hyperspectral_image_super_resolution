@@ -6,7 +6,6 @@ import scipy.io as sci
 import torch
 import torch.optim as optim
 import numpy as np
-import sys
 import itertools
 import predict
 import pandas as pd
@@ -33,7 +32,8 @@ def main():
     parser.add_argument('filename', help='Name of the file to open')
     parser.add_argument('--display', action='store_true', help='Display the models sorted by the RMSE')
     args = parser.parse_args()
-    folder_base_name = 'Grid_Search/'   
+    folder_base_name = 'Grid_Search/'  
+
     # Ask the user for the model name
     if (args.filename):
         model_name = args.filename
@@ -75,47 +75,49 @@ def main():
     lrHSI = (lrHSI - lrHSI.min()) / (lrHSI.max() - lrHSI.min())
     hrMSI = (hrMSI - hrMSI.min()) / (hrMSI.max() - hrMSI.min())
     
-    # lrHSI = normalize(lrHSI)
-    # hrMSI = normalize(hrMSI)
-    
     # Transforming the data into Tensors
     Z = torch.from_numpy(lrHSI.astype(int))
     Y = torch.from_numpy(hrMSI.astype(int))  
 
     combinations = list(itertools.product(alpha_values, beta_values, gamma_values, u_values, v_values))
-    # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
     
     metadata_file = open(model_dir + '/metadata.txt', "x")
     metadata_file.write('index,alpha,beta,gamma,u,v,RMSE\n')
     for index, combination in enumerate(combinations):
-        # Create optimizer
+        # Create model
         CCNN = model.Model(Z, Y, n_endmembers=100)
+        # Create optimizer
         optimizer = optim.Adam(CCNN.parameters(), 
                            betas = (0.9, 0.999),
                            eps = 1e-08,
                            lr=0.01)
+        # Gridsearch hyperparameters values 
         alpha = combination[0]
         beta = combination[1]
         gamma = combination[2]
         u = combination[3]
         v = combination[4]
+        # Saving each model and respective hyperparameters in the metadata_file 
         file_name = model_dir + '/model_' + str(index) + '.pth'
         metadata_file.write(str(index) + ',' + str(alpha) + ',' + str(beta) + ',' + str(gamma) + ',' + str(u) + ',' + str(v))
+        
+        # obtaining the last loss
         last_loss = train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, file_name)
+        
+        # obtaining RMSE from prediction
         RMSE = predict.main(model_name=file_name, plot=False)
+
+        # also saving this value in the metadata
         metadata_file.write(',' + str(RMSE) + '\n')
     metadata_file.close()
+    
+    # printing the list of best models obtained
     dataframe = pd.read_csv(model_dir + '/metadata.txt')
     dataframe = dataframe.sort_values('RMSE')
-    print(dataframe)
-def normalize(input, axis=2):
-    sum = np.sum(input, axis=axis, keepdims=True)
-    output = input / sum
-    return output
-
+    print(f"the best 5 models: \n {dataframe.head(5)}")
+    print(f"the worst 5 models: \n {dataframe.tail(5)}")
 
 # Create loss loop
-
 def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs, model_name_='model.pth'):
     print(model_name_)
     # Create scheduler to implement the learning rate decay
@@ -136,17 +138,7 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
 
         # Backward pass
         loss.backward()
-        optimizer.step()
-        
-        with torch.no_grad():
-            for p in model_.Econv.parameters():
-                p.clamp_(0, 1)
-            for p in model_.PSFconv.parameters():
-                p.clamp_(0, 1)
-            for p in model_.SRFconv.parameters():
-                p.clamp_(0, 1)
-                
-        
+        optimizer.step()             
         scheduler.step()
 
         # Print the loss for every epoch
@@ -154,14 +146,8 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {last_loss}, last_lr: {scheduler.get_last_lr()}")
         
     print("Training finished!")
-
-    # creating folder to save the model 
-    #path_model = './Models/'
-    # if Model_checkpoint folder does not exist, create it
-    #if not os.path.exists(path_model):
-        #os.makedirs(path_model)
-    # saving the model
     
+    # Saving the trained model
     torch.save(model_.state_dict(), model_name_)
     print(model_name_ + " saved!")
     return last_loss
