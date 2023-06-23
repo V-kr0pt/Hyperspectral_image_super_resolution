@@ -189,8 +189,8 @@ class Model(torch.nn.Module):
         a = torch.tensor(1e-4, dtype=torch.float) # sparsity parameter
         target_sparse = a.expand_as(A) 
         # KL divergence
-        p = F.softmax(A, dim=0)
-        q = F.softmax(target_sparse, dim=0)
+        p = F.softmax(target_sparse, dim=0)
+        q = F.softmax(A, dim=0)
         s1 = torch.sum(p * torch.log(p / q))
         s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q))) 
         Lsparse = s1 + s2

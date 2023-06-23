@@ -22,40 +22,46 @@ hrMSI = Images_Generator.img_msi
 # Transforming the data into Tensors
 Z = torch.from_numpy(lrHSI.astype(int))
 Y = torch.from_numpy(hrMSI.astype(int))
-    
+
 # create the model object
 CCNN = model.Model(Z, Y, n_endmembers=100)
 
 # load the model
 model_path = './Models/'
-model_name = 'model_f227.pth'
+model_name = 'model_after_meet.pth'
 CCNN.load_state_dict(torch.load(model_path + model_name))
 
-# reshape the data, always the channels first
+# permuting the data to have the channels first
+X = X.permute(2, 0, 1)
 Z = Z.permute(2, 0, 1) 
 Y = Y.permute(2, 0, 1)
+
+# normalizing the data
 Z = (Z - torch.min(Z)) / (torch.max(Z) - torch.min(Z)) 
 Y = (Y - torch.min(Y)) / (torch.max(Y) - torch.min(Y))
 
 # Do a forward pass
 X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = CCNN.forward(Z, Y)  
 
-# Visualize the results with a colobar
+# Visualize the results
+fig, ax = plt.subplots(3, 2)
+#plt.set_supertitle('Results of the CCNN model')
+plt.subplots_adjust(left=0.12, bottom=0.048, right=0.9, top=0.93, wspace=0.45, hspace=0.524)
 
-fig, ax = plt.subplots(3, 2 , figsize=(25, 25))
-
-
- 
-ax[0, 0].imshow(X.detach().numpy()[:, :, 1])
-ax[0, 0].set_title('High resolution HSI')
+ax[0, 0].imshow(X.detach().numpy()[1, :, :])
+ax[0, 0].set_title('hrHSI')
 ax[0, 1].imshow(X_.detach().numpy()[1, :, :])
-ax[0, 1].set_title('Predicted')
+ax[0, 1].set_title('Predicted hrHSI')
+
 ax[1, 0].imshow(Y.detach().numpy()[1, :, :])
-ax[1, 0].set_title('High resolution MSI')
+ax[1, 0].set_title('hrMSI')
 ax[1, 1].imshow(Y_.detach().numpy()[1, :, :])
+ax[1, 1].set_title('Predicted hrMSI')
+
 ax[2, 0].imshow(Z.detach().numpy()[1, :, :])
-ax[2, 0].set_title('Low resolution HSI')
+ax[2, 0].set_title('lrHSI')
 ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
+ax[2, 1].set_title('Predicted lrHSI')
 
 fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[:, :, 1]), ax=ax[0, 0])
 fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
@@ -66,8 +72,16 @@ fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
 
 plt.show()
 
+# Saving the figure 
 fig_path = './Results/'
-plt.savefig(fig_path + model_name[:-4] + '.png')
+img_name = model_name[:-4] + '.png'
+if img_name in os.listdir(fig_path):
+    # just in case the file already exists, ask the user if he wants to overwrite it
+    overwrite_choice = input("The file already exists. Do you want to overwrite it? (Y/n)")
+    if overwrite_choice != 'n':
+        plt.savefig(fig_path + img_name)
+else:
+    plt.savefig(fig_path + img_name)
 
 # Quantitative evaluation
 # Calculate the mean spectral angle mapper (mSAM) 
