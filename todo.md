@@ -14,12 +14,10 @@
 - [x] Put linear decay in the learning rate
 - [x] Create a prediction.py 
 - [x] Save the model after training
+- [x] Create hypothesis about why the training is not working
 - [ ] Create a log file to save the training information
 - [ ] Error metrics (RGB RMSE, MRAE, SAM, mSAM, mPSNR, ERGAS)
-- [ ] Create hyphotesis about why the training is not working
 
-Some ideas:
-- [ ] Remove clamp from the model definition and put it in the training loop (E, PSF and SNF)
-- [ ] Put clamp in E, PSF and SNF in the training loop
+
 
 

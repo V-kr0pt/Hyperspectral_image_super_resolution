@@ -28,7 +28,7 @@ CCNN = model.Model(Z, Y, n_endmembers=100)
 
 # load the model
 model_path = './Models/'
-model_name = 'model_normalization.pth'
+model_name = 'model_after_meet.pth'
 CCNN.load_state_dict(torch.load(model_path + model_name))
 
 # permuting the data to have the channels first
