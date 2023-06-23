@@ -7,7 +7,7 @@ import preprocessing
 from train_model import train 
 import numpy as np
 
-def main(model_name='./Models/u_t01.pth', plot=True):
+def main(model_name='./Grid_Search/aaa/model_72.pth', plot=True):
     # Obtaining the high resolution HSI data (X)
     path = './Datasets/IndianPines/'
     data = sci.loadmat(path + 'Indian_pines_corrected.mat')
@@ -75,8 +75,6 @@ def main(model_name='./Models/u_t01.pth', plot=True):
     # Quantitative evaluation
     # Calculate the mean spectral angle mapper (mSAM) 
     
-    print('shape: ', X.shape)
-    print('shape: ', X_.shape)
     #mSAM = torch.mean(torch.acos(torch.sum(X * X_, dim=0) / (torch.norm(X, dim=0) * torch.norm(X_, dim=0))))
     # # Calculate the root mean squared error (RMSE) 
     RMSE = torch.sqrt(torch.mean((X - X_)**2))
@@ -84,13 +82,13 @@ def main(model_name='./Models/u_t01.pth', plot=True):
     mPSNR = 10 * torch.log10(255**2 / RMSE**2)
     return RMSE.item()
 
-if __name__ == '__main__':
-    main()
-
 def normalize(X, X_):
     X = (X - torch.min(X)) / (torch.max(X) - torch.min(X))
     X_ = (X_ - torch.min(X_)) / (torch.max(X_) - torch.min(X_))
-
     return X, X_
+
+if __name__ == '__main__':
+    main()
+
 
 

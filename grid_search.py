@@ -9,14 +9,44 @@ import numpy as np
 import sys
 import itertools
 import predict
+import pandas as pd
+import argparse
 
 def main():
+    # I think 7 is the ideal number of points for the logspaces, but it's too costly
+    alpha_values = np.logspace(-3, 3, 3)
+    beta_values = np.logspace(-3, 3, 3)
+    gamma_values = np.logspace(-3, 3, 3)
+    u_values = np.logspace(-3, 3, 3)
+    v_values = np.logspace(-3, 3, 3)
     num_epochs = 5
+    '''
+    Usage:
+    Change the values of the desired hyperparameters on this file before grid searching
+    - To grid search: 
+    python grid_search.py <model_name>
+    - To visualize the best hyperparameters based on the RMSE for a given model:
+    python grid_search <model_name> --display
+    '''
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', help='Name of the file to open')
+    parser.add_argument('--display', action='store_true', help='Display the models sorted by the RMSE')
+    args = parser.parse_args()
+    folder_base_name = 'Grid_Search/'   
     # Ask the user for the model name
-    try:
-        model_name = sys.argv[1]
-        print(sys.argv)
-    except:
+    if (args.filename):
+        model_name = args.filename
+        model_dir = folder_base_name + model_name
+        try:
+            if args.display:
+                dataframe = pd.read_csv(model_dir + '/metadata.txt')
+                dataframe = dataframe.sort_values('RMSE')
+                print(dataframe)
+                return
+        except:
+            print("There is no model to display yet. Do the grid search and after try to display the results")
+    else:
         current_datetime = datetime.now()
         year = current_datetime.year
         month = current_datetime.month
@@ -24,9 +54,10 @@ def main():
         hour = current_datetime.hour
         minute = current_datetime.minute
         model_name = f'model_{year}-{month}-{day}-{hour}-{minute}' 
-    folder_base_name = 'Grid_Search/Grid_Search_'   
+        model_dir = folder_base_name + model_name    
+
     os.makedirs(folder_base_name + model_name)
-    model_dir = folder_base_name + model_name
+    
     # Obtaining the high resolution HSI data (X)
     path = './Datasets/IndianPines/'
     data = sci.loadmat(path + 'Indian_pines_corrected.mat')
@@ -49,25 +80,8 @@ def main():
     
     # Transforming the data into Tensors
     Z = torch.from_numpy(lrHSI.astype(int))
-    Y = torch.from_numpy(hrMSI.astype(int))
-    
-    # Instance model object
-    CCNN = model.Model(Z, Y, n_endmembers=100)
-    # Create optimizer
-    optimizer = optim.Adam(CCNN.parameters(), 
-                           betas = (0.9, 0.999),
-                           eps = 1e-08,
-                           lr=0.01)
+    Y = torch.from_numpy(hrMSI.astype(int))  
 
-    # Define hyperparameters
-
-    # The values of the hyperparameters are the set values from paper
-    
-    alpha_values = np.logspace(-3, 3, 3)
-    beta_values = np.logspace(-3, 3, 3)
-    gamma_values = np.logspace(-3, 3, 3)
-    u_values = np.logspace(-3, 3, 3)
-    v_values = np.logspace(-3, 3, 3)
     combinations = list(itertools.product(alpha_values, beta_values, gamma_values, u_values, v_values))
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
     
@@ -91,6 +105,9 @@ def main():
         RMSE = predict.main(model_name=file_name, plot=False)
         metadata_file.write(',' + str(RMSE) + '\n')
     metadata_file.close()
+    dataframe = pd.read_csv(model_dir + '/metadata.txt')
+    dataframe = dataframe.sort_values('RMSE')
+    print(dataframe)
 def normalize(input, axis=2):
     sum = np.sum(input, axis=axis, keepdims=True)
     output = input / sum
