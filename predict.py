@@ -40,9 +40,12 @@ Y = (Y - torch.min(Y)) / (torch.max(Y) - torch.min(Y))
 # Do a forward pass
 X_, Y_, Za, Zb, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y = CCNN.forward(Z, Y)  
 
-# Visualize the results
+# Visualize the results with a colobar
+
 fig, ax = plt.subplots(3, 2 , figsize=(25, 25))
 
+
+ 
 ax[0, 0].imshow(X.detach().numpy()[:, :, 1])
 ax[0, 0].set_title('High resolution HSI')
 ax[0, 1].imshow(X_.detach().numpy()[1, :, :])
@@ -53,6 +56,13 @@ ax[1, 1].imshow(Y_.detach().numpy()[1, :, :])
 ax[2, 0].imshow(Z.detach().numpy()[1, :, :])
 ax[2, 0].set_title('Low resolution HSI')
 ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
+
+fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[:, :, 1]), ax=ax[0, 0])
+fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
+fig.colorbar(ax[1, 0].imshow(Y.detach().numpy()[1, :, :]), ax=ax[1, 0])
+fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
+fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
+fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
 
 plt.show()
 
