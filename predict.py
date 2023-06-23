@@ -28,7 +28,7 @@ CCNN = model.Model(Z, Y, n_endmembers=100)
 
 # load the model
 model_path = './Models/'
-model_name = 'model_after_meet.pth'
+model_name = 'model_f227.pth'
 CCNN.load_state_dict(torch.load(model_path + model_name))
 
 # permuting the data to have the channels first
@@ -63,7 +63,7 @@ ax[2, 0].set_title('lrHSI')
 ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
 ax[2, 1].set_title('Predicted lrHSI')
 
-fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[:, :, 1]), ax=ax[0, 0])
+fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[1, :, :]), ax=ax[0, 0])
 fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
 fig.colorbar(ax[1, 0].imshow(Y.detach().numpy()[1, :, :]), ax=ax[1, 0])
 fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])

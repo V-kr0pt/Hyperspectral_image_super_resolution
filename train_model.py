@@ -6,6 +6,7 @@ import scipy.io as sci
 import torch
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def main():
@@ -106,13 +107,13 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
     torch.save(model_.state_dict(), path_model + model_name)
     print(model_name + " saved!")
     
-    path_results = './Results/'
-    if not os.path.exists(path_results):
-        os.makedirs(path_results)
-    with open(path_results + model_name + '.txt', 'w') as f:
-        for loss in losses:
-            f.write(str(loss) + '\n')
-    print(model_name + '.txt saved!')
+    path_train_history = './Train_History/'
+    losses = np.array(losses)
+    
+    if not os.path.exists(path_train_history):
+        os.makedirs(path_train_history)
+
+    np.save(path_train_history + model_name, losses) 
     
     plt.plot(losses)
     plt.title('Training Loss')
