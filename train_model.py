@@ -5,6 +5,7 @@ import preprocessing
 import scipy.io as sci
 import torch
 import torch.optim as optim
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -54,7 +55,7 @@ def main():
     u = 0.001
     v = 0.001
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
-    num_epochs = 10000
+    num_epochs = 50
 
     train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, model_name)
 
@@ -73,7 +74,8 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
     #normalize the data
     Z_train = (Z_train - torch.min(Z_train)) / (torch.max(Z_train) - torch.min(Z_train)) 
     Y_train = (Y_train - torch.min(Y_train)) / (torch.max(Y_train) - torch.min(Y_train))
-
+    
+    losses = []
     # Training loop 
     for epoch in range(num_epochs):
         optimizer.zero_grad()  # Clear gradients
@@ -83,6 +85,8 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
         # Compute the loss
         loss = model_.loss(Z_train, Y_train, Za, Zb, Y_, A, Ah_a, Ah_b, lrMSI_Z, lrMSI_Y, alpha, beta, gamma, u, v)
 
+        losses.append(loss.item())
+        
         # Backward pass
         loss.backward()
         optimizer.step()
@@ -101,6 +105,21 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
     # saving the model
     torch.save(model_.state_dict(), path_model + model_name)
     print(model_name + " saved!")
+    
+    path_results = './Results/'
+    if not os.path.exists(path_results):
+        os.makedirs(path_results)
+    with open(path_results + model_name + '.txt', 'w') as f:
+        for loss in losses:
+            f.write(str(loss) + '\n')
+    print(model_name + '.txt saved!')
+    
+    plt.plot(losses)
+    plt.title('Training Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.show()
+    
 
 if __name__ == '__main__':
     main()

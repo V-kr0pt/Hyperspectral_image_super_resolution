@@ -63,6 +63,13 @@ ax[2, 0].set_title('lrHSI')
 ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
 ax[2, 1].set_title('Predicted lrHSI')
 
+fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[:, :, 1]), ax=ax[0, 0])
+fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
+fig.colorbar(ax[1, 0].imshow(Y.detach().numpy()[1, :, :]), ax=ax[1, 0])
+fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
+fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
+fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
+
 plt.show()
 
 # Saving the figure 
