@@ -7,7 +7,10 @@ import preprocessing
 from train_model import train 
 import numpy as np
 
-def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
+def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True):
+    # Obtaining model name
+    model_name = model_path.split('/')[-1] 
+
     # Obtaining the high resolution HSI data (X)
     path = './Datasets/IndianPines/'
     data = sci.loadmat(path + 'Indian_pines_corrected.mat')
@@ -27,7 +30,7 @@ def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
     # create the model object
     CCNN = model.Model(Z, Y, n_endmembers=100)
 
-    CCNN.load_state_dict(torch.load(model_name))
+    CCNN.load_state_dict(torch.load(model_path))
     # permuting the data to have the channels first
     X = X.permute(2, 0, 1)
     Z = Z.permute(2, 0, 1) 
@@ -70,8 +73,11 @@ def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
         fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
         fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
         fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
-
+        
+        # showing the figure
         plt.show()
+    
+    
 
     # Quantitative evaluation
     # Calculate the mean spectral angle mapper (mSAM) 
