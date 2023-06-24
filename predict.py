@@ -7,9 +7,12 @@ import preprocessing
 from train_model import train 
 import numpy as np
 
-def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True):
+def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True, save_figure=False):
     # Obtaining model name
-    model_name = model_path.split('/')[-1] 
+    if model_path.split('/')[1] == 'Grid_Search':
+        model_name = model_path.split('/')[-2] + '_' + model_path.split('/')[-1] 
+    else:
+        model_name = model_path.split('/')[-1]
 
     # Obtaining the high resolution HSI data (X)
     path = './Datasets/IndianPines/'
@@ -73,6 +76,10 @@ def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True):
         fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
         fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
         fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
+
+        if save_figure:
+            #save the figure as modelname.png 
+            plt.savefig('./Results/' + model_name +'.png')
         
         # showing the figure
         plt.show()
