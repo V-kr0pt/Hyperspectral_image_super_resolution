@@ -7,7 +7,7 @@ import preprocessing
 from train_model import train 
 import numpy as np
 
-def main(model_name='./Grid_Search/aaa/model_72.pth', plot=True):
+def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
     # Obtaining the high resolution HSI data (X)
     path = './Datasets/IndianPines/'
     data = sci.loadmat(path + 'Indian_pines_corrected.mat')
@@ -72,6 +72,7 @@ def main(model_name='./Grid_Search/aaa/model_72.pth', plot=True):
         fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
 
         plt.show()
+
     # Quantitative evaluation
     # Calculate the mean spectral angle mapper (mSAM) 
     
