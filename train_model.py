@@ -117,7 +117,7 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
     if not os.path.exists(path_numpy_train_history):
         os.makedirs(path_numpy_train_history)    
 
-    np.save(path_train_history + model_name[:-4], losses) 
+    np.save(path_numpy_train_history + model_name[:-4], losses) 
 
     plt.plot(losses)
     plt.grid(True)

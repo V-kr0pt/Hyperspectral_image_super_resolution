@@ -6,7 +6,7 @@ import model
 import preprocessing
 import numpy as np
 
-def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True, save_figure=False):
+def main(model_path='./Models/article_model.pth', plot=True, save_figure=False):
     # Obtaining model name
     if model_path.split('/')[1] == 'Grid_Search':
         model_name = model_path.split('/')[-2] + '_' + model_path.split('/')[-1] 
