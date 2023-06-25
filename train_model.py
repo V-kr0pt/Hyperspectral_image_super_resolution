@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def main():
+def main(plot=True, save_figure=True):
     # Ask the user for the model name
     model_name = input("Input the model name: ")
     if model_name == '':
@@ -56,14 +56,14 @@ def main():
     u = 0.001
     v = 0.001
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
-    num_epochs = 50
+    num_epochs = 2000
 
-    train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, model_name)
+    train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, model_name, plot=plot, save_figure=save_figure)
 
 
 # Create loss loop
 
-def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs, model_name='model.pth'):
+def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs, model_name='model.pth', plot=False, save_figure=False):
     
     # Create scheduler to implement the learning rate decay
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=.5, end_factor=0, total_iters=10000)
@@ -108,18 +108,31 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
     print(model_name + " saved!")
     
     # saving the training losses 
-    path_train_history = './Train_History/'
-    losses = np.array(losses)    
-    if not os.path.exists(path_train_history):
-        os.makedirs(path_train_history)
-    # removing .pth from the name
+    losses = np.array(losses) 
+
+    path_train_history = './Train_History/' 
+    path_numpy_train_history = path_train_history + 'Losses/'     
+    path_fig_train_history = path_train_history + 'Figures/'
+
+    if not os.path.exists(path_numpy_train_history):
+        os.makedirs(path_numpy_train_history)    
+
     np.save(path_train_history + model_name[:-4], losses) 
-    
+
     plt.plot(losses)
+    plt.grid(True)
     plt.title('Training Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
-    plt.show()
+
+    if save_figure:
+        if not os.path.exists(path_fig_train_history):
+            os.makedirs(path_fig_train_history)
+        plt.savefig(path_fig_train_history + model_name[:-4] + '.png')
+        print("Figure saved!")
+    
+    if plot:    
+        plt.show()
     
 
 if __name__ == '__main__':
