@@ -4,10 +4,15 @@ import scipy.io as sci
 import matplotlib.pyplot as plt
 import model
 import preprocessing
-from train_model import train 
 import numpy as np
 
-def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
+def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True, save_figure=False):
+    # Obtaining model name
+    if model_path.split('/')[1] == 'Grid_Search':
+        model_name = model_path.split('/')[-2] + '_' + model_path.split('/')[-1] 
+    else:
+        model_name = model_path.split('/')[-1]
+
     # Obtaining the high resolution HSI data (X)
     path = './Datasets/IndianPines/'
     data = sci.loadmat(path + 'Indian_pines_corrected.mat')
@@ -27,7 +32,7 @@ def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
     # create the model object
     CCNN = model.Model(Z, Y, n_endmembers=100)
 
-    CCNN.load_state_dict(torch.load(model_name))
+    CCNN.load_state_dict(torch.load(model_path))
     # permuting the data to have the channels first
     X = X.permute(2, 0, 1)
     Z = Z.permute(2, 0, 1) 
@@ -44,34 +49,45 @@ def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
     # Visualize the results
     X, X_ = normalize(X, X_)
     
-    if(plot):
-        fig, ax = plt.subplots(3, 2)
-        #plt.set_supertitle('Results of the CCNN model')
-        plt.subplots_adjust(left=0.12, bottom=0.048, right=0.9, top=0.93, wspace=0.45, hspace=0.524)
+    
+    fig, ax = plt.subplots(3, 2)
+    #plt.set_supertitle('Results of the CCNN model')
+    plt.subplots_adjust(left=0.12, bottom=0.048, right=0.9, top=0.93, wspace=0.45, hspace=0.524)
 
-        ax[0, 0].imshow(X.detach().numpy()[1, :, :])
-        ax[0, 0].set_title('hrHSI')
-        ax[0, 1].imshow(X_.detach().numpy()[1, :, :])
-        ax[0, 1].set_title('Predicted hrHSI')
+    ax[0, 0].imshow(X.detach().numpy()[1, :, :])
+    ax[0, 0].set_title('hrHSI')
+    ax[0, 1].imshow(X_.detach().numpy()[1, :, :])
+    ax[0, 1].set_title('Predicted hrHSI')
 
-        ax[1, 0].imshow(Y.detach().numpy()[1, :, :])
-        ax[1, 0].set_title('hrMSI')
-        ax[1, 1].imshow(Y_.detach().numpy()[1, :, :])
-        ax[1, 1].set_title('Predicted hrMSI')
+    ax[1, 0].imshow(Y.detach().numpy()[1, :, :])
+    ax[1, 0].set_title('hrMSI')
+    ax[1, 1].imshow(Y_.detach().numpy()[1, :, :])
+    ax[1, 1].set_title('Predicted hrMSI')
 
-        ax[2, 0].imshow(Z.detach().numpy()[1, :, :])
-        ax[2, 0].set_title('lrHSI')
-        ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
-        ax[2, 1].set_title('Predicted lrHSI')
+    ax[2, 0].imshow(Z.detach().numpy()[1, :, :])
+    ax[2, 0].set_title('lrHSI')
+    ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
+    ax[2, 1].set_title('Predicted lrHSI')
 
-        fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[1, :, :]), ax=ax[0, 0])
-        fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
-        fig.colorbar(ax[1, 0].imshow(Y.detach().numpy()[1, :, :]), ax=ax[1, 0])
-        fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
-        fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
-        fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
+    fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[1, :, :]), ax=ax[0, 0])
+    fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
+    fig.colorbar(ax[1, 0].imshow(Y.detach().numpy()[1, :, :]), ax=ax[1, 0])
+    fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
+    fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
+    fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
 
+    if save_figure:
+        if not os.path.exists('./Results'):
+            os.mkdir('./Results')
+        #save the figure as modelname.png 
+        plt.savefig('./Results/' + model_name[:-4] +'.png')
+        print("Figure saved!")
+    
+    if plot:   
+        # showing the figure
         plt.show()
+    
+    
 
     # Quantitative evaluation
     # Calculate the mean spectral angle mapper (mSAM) 
@@ -90,6 +106,4 @@ def normalize(X, X_):
 
 if __name__ == '__main__':
     main()
-
-
-
+    
