@@ -56,7 +56,7 @@ def main(plot=True, save_figure=True):
     u = 0.001
     v = 0.001
     # Future change: "After a total of 10.000 epochs the lr is reduced to 0"
-    num_epochs = 2000
+    num_epochs = 10000
 
     train(CCNN, optimizer, Z, Y, alpha, beta, gamma, u, v, num_epochs, model_name, plot=plot, save_figure=save_figure)
 
@@ -66,7 +66,7 @@ def main(plot=True, save_figure=True):
 def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epochs, model_name='model.pth', plot=False, save_figure=False):
     
     # Create scheduler to implement the learning rate decay
-    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=.5, end_factor=0, total_iters=10000)
+    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=.5, end_factor=0, total_iters=num_epochs)
     
     # reshape the data, always the channels first
     Z_train = Z_train.permute(2, 0, 1) 
