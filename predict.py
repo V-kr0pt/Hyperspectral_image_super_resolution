@@ -78,8 +78,10 @@ def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True, save_f
         fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
 
         if save_figure:
+            if not os.path.exists('./Results'):
+                os.mkdir('./Results')
             #save the figure as modelname.png 
-            plt.savefig('./Results/' + model_name +'.png')
+            plt.savefig('./Results/' + model_name[:-4] +'.png')
         
         # showing the figure
         plt.show()
@@ -103,6 +105,6 @@ def normalize(X, X_):
 
 if __name__ == '__main__':
     main()
-
+    
 
 
