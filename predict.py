@@ -50,39 +50,39 @@ def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True, save_f
     # Visualize the results
     X, X_ = normalize(X, X_)
     
-    if(plot):
-        fig, ax = plt.subplots(3, 2)
-        #plt.set_supertitle('Results of the CCNN model')
-        plt.subplots_adjust(left=0.12, bottom=0.048, right=0.9, top=0.93, wspace=0.45, hspace=0.524)
+    
+    fig, ax = plt.subplots(3, 2)
+    #plt.set_supertitle('Results of the CCNN model')
+    plt.subplots_adjust(left=0.12, bottom=0.048, right=0.9, top=0.93, wspace=0.45, hspace=0.524)
 
-        ax[0, 0].imshow(X.detach().numpy()[1, :, :])
-        ax[0, 0].set_title('hrHSI')
-        ax[0, 1].imshow(X_.detach().numpy()[1, :, :])
-        ax[0, 1].set_title('Predicted hrHSI')
+    ax[0, 0].imshow(X.detach().numpy()[1, :, :])
+    ax[0, 0].set_title('hrHSI')
+    ax[0, 1].imshow(X_.detach().numpy()[1, :, :])
+    ax[0, 1].set_title('Predicted hrHSI')
 
-        ax[1, 0].imshow(Y.detach().numpy()[1, :, :])
-        ax[1, 0].set_title('hrMSI')
-        ax[1, 1].imshow(Y_.detach().numpy()[1, :, :])
-        ax[1, 1].set_title('Predicted hrMSI')
+    ax[1, 0].imshow(Y.detach().numpy()[1, :, :])
+    ax[1, 0].set_title('hrMSI')
+    ax[1, 1].imshow(Y_.detach().numpy()[1, :, :])
+    ax[1, 1].set_title('Predicted hrMSI')
 
-        ax[2, 0].imshow(Z.detach().numpy()[1, :, :])
-        ax[2, 0].set_title('lrHSI')
-        ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
-        ax[2, 1].set_title('Predicted lrHSI')
+    ax[2, 0].imshow(Z.detach().numpy()[1, :, :])
+    ax[2, 0].set_title('lrHSI')
+    ax[2, 1].imshow(Za.detach().numpy()[1, :, :])
+    ax[2, 1].set_title('Predicted lrHSI')
 
-        fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[1, :, :]), ax=ax[0, 0])
-        fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
-        fig.colorbar(ax[1, 0].imshow(Y.detach().numpy()[1, :, :]), ax=ax[1, 0])
-        fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
-        fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
-        fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
+    fig.colorbar(ax[0, 0].imshow(X.detach().numpy()[1, :, :]), ax=ax[0, 0])
+    fig.colorbar(ax[0, 1].imshow(X_.detach().numpy()[1, :, :]), ax=ax[0, 1])
+    fig.colorbar(ax[1, 0].imshow(Y.detach().numpy()[1, :, :]), ax=ax[1, 0])
+    fig.colorbar(ax[1, 1].imshow(Y_.detach().numpy()[1, :, :]), ax=ax[1, 1])
+    fig.colorbar(ax[2, 0].imshow(Z.detach().numpy()[1, :, :]), ax=ax[2, 0])
+    fig.colorbar(ax[2, 1].imshow(Za.detach().numpy()[1, :, :]), ax=ax[2, 1])
 
-        if save_figure:
-            if not os.path.exists('./Results'):
-                os.mkdir('./Results')
-            #save the figure as modelname.png 
-            plt.savefig('./Results/' + model_name[:-4] +'.png')
-        
+    if save_figure:
+        if not os.path.exists('./Results'):
+            os.mkdir('./Results')
+        #save the figure as modelname.png 
+        plt.savefig('./Results/' + model_name[:-4] +'.png')
+    if plot:   
         # showing the figure
         plt.show()
     
