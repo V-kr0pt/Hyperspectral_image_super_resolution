@@ -81,6 +81,7 @@ def main(model_path='./Grid_Search/model_test1/model_218.pth', plot=True, save_f
             os.mkdir('./Results')
         #save the figure as modelname.png 
         plt.savefig('./Results/' + model_name[:-4] +'.png')
+        print("Figure saved!")
     
     if plot:   
         # showing the figure
@@ -104,5 +105,5 @@ def normalize(X, X_):
     return X, X_
 
 if __name__ == '__main__':
-    main(save_figure=True)
+    main()
     
