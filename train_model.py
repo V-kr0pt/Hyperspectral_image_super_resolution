@@ -107,13 +107,13 @@ def train(model_, optimizer, Z_train, Y_train, alpha, beta, gamma, u, v, num_epo
     torch.save(model_.state_dict(), path_model + model_name)
     print(model_name + " saved!")
     
+    # saving the training losses 
     path_train_history = './Train_History/'
-    losses = np.array(losses)
-    
+    losses = np.array(losses)    
     if not os.path.exists(path_train_history):
         os.makedirs(path_train_history)
-
-    np.save(path_train_history + model_name, losses) 
+    # removing .pth from the name
+    np.save(path_train_history + model_name[:-4], losses) 
     
     plt.plot(losses)
     plt.title('Training Loss')
