@@ -18,7 +18,7 @@ def main():
     gamma_values = np.logspace(-3, 3, 3)
     u_values = np.logspace(-3, 3, 3)
     v_values = np.logspace(-3, 3, 3)
-    num_epochs = 5
+    num_epochs = 100
     '''
     Usage:
     Change the values of the desired hyperparameters on this file before grid searching

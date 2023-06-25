@@ -81,7 +81,7 @@ def main(model_name='./Grid_Search/model_test1/model_218.pth', plot=True):
     RMSE = torch.sqrt(torch.mean((X - X_)**2))
     # # Calculate the mean PSNR 
     mPSNR = 10 * torch.log10(255**2 / RMSE**2)
-    return RMSE.item()
+    return RMSE.item(), mPSNR.item()
 
 def normalize(X, X_):
     X = (X - torch.min(X)) / (torch.max(X) - torch.min(X))
